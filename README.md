@@ -7,7 +7,8 @@
 * 选择AES-256-CBC模式
 * 指定PKCS7填充
 * 偏移量为空
-AES工具可以使用https://www.iamwawa.cn/aes.html
+
+AES工具可以使用https://box.newban.cn或者https://www.iamwawa.cn/aes.html
 
 ## 加解密技术原理
 ​​加密过程​​:
@@ -15,9 +16,24 @@ AES工具可以使用https://www.iamwawa.cn/aes.html
 * 使用AES-256-CBC模式加密
 * 加密结果包含16字节IV + 密文
 * 最终结果使用Base64编码存储
+
 ​​解密过程​​:
 * Base64解码获取原始字节
 * 分离IV和密文
 * 使用主密码派生相同密钥
 * AES解密并移除PKCS7填充
 * 解析JSON数据
+
+## 功能实现
+* 数据导入导出
+* 数据自定义存储(本地、Github、Webdav等)
+* 数据分类
+* 数据加密存储
+* 配置文件的导出
+* 网站纯本地运行 不涉及第三方后台 安全性高
+* 密钥分享 (待开发)
+
+## 网站部署
+
+直接将该仓库的代码上传到你自己的静态服务器上即可使用
+网站示例: [点击进入](https://mi.newban.cn/)
