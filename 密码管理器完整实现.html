@@ -1,0 +1,3492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecurePass - 密码管理器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --primary-dark: #0d47a1;
+            --secondary: #34a853;
+            --danger: #ea4335;
+            --warning: #fbbc05;
+            --dark: #121212;
+            --dark-light: #1e1e1e;
+            --gray: #2d2d2d;
+            --light-gray: #3d3d3d;
+            --text: #e0e0e0;
+            --text-secondary: #9e9e9e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--dark);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100%;
+        }
+
+        /* 侧边导航 */
+        .sidebar {
+            width: 250px;
+            background-color: var(--dark-light);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--gray);
+            overflow-y: auto;
+            height: calc(100vh - 40px);
+
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--gray);
+        }
+
+        .logo i {
+            font-size: 28px;
+            color: var(--primary);
+            margin-right: 10px;
+        }
+
+        .logo h1 {
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        .nav-section {
+            margin-bottom: 25px;
+        }
+
+        .nav-title {
+            color: var(--text-secondary);
+            font-size: 14px;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover {
+            background-color: var(--gray);
+        }
+
+        .nav-item.active {
+            background-color: var(--primary);
+        }
+
+        .nav-item i {
+            margin-right: 12px;
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+
+        .nav-item span {
+            font-size: 16px;
+        }
+
+        .storage-config {
+            background-color: var(--gray);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: auto;
+        }
+
+        .storage-config h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .storage-config h3 i {
+            margin-right: 8px;
+            color: var(--primary);
+        }
+
+        .storage-config p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 15px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(26, 115, 232, 0.1);
+        }
+
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background-color: var(--dark-light);
+            border-bottom: 1px solid var(--gray);
+        }
+
+        .search-box {
+            position: relative;
+            width: 300px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 15px 12px 45px;
+            background-color: var(--dark);
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--dark);
+            border: 1px solid var(--light-gray);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background-color: var(--gray);
+        }
+
+        /* 密码列表 */
+        .content-area {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .password-list {
+            width: 350px;
+            border-right: 1px solid var(--gray);
+            overflow-y: auto;
+            background-color: var(--dark-light);
+        }
+
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--gray);
+        }
+
+        .list-header h2 {
+            font-size: 18px;
+        }
+
+        .password-count {
+            background-color: var(--primary);
+            color: white;
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+
+        .password-items {
+            padding: 10px;
+        }
+
+        .password-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .password-item:hover {
+            background-color: var(--gray);
+        }
+
+        .password-item.active {
+            background-color: rgba(26, 115, 232, 0.15);
+            border-left: 3px solid var(--primary);
+        }
+
+        .favicon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background-color: var(--dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 20px;
+            color: var(--primary);
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-info h3 {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .item-info p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* 密码详情 */
+        .password-detail {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            background-color: var(--dark);
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .detail-title {
+            display: flex;
+            align-items: center;
+        }
+
+        .detail-favicon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background-color: var(--dark-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-right: 15px;
+            color: var(--primary);
+        }
+
+        .detail-title h2 {
+            font-size: 24px;
+        }
+
+        .detail-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .detail-content {
+            max-width: 600px;
+        }
+
+        .info-group {
+            margin-bottom: 25px;
+        }
+
+        .info-group h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--light-gray);
+        }
+
+        .info-row {
+            display: flex;
+            margin-bottom: 15px;
+        }
+
+        .info-label {
+            width: 150px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .info-value {
+            flex: 1;
+            font-size: 16px;
+            word-break: break-all;
+        }
+
+        .password-field {
+            display: flex;
+            align-items: center;
+            background-color: var(--dark-light);
+            border-radius: 6px;
+            padding: 10px 15px;
+        }
+
+        .password-text {
+            flex: 1;
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
+
+        .password-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .copy-btn {
+            background-color: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            color: var(--primary);
+        }
+
+        .reveal-btn {
+            background-color: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .reveal-btn:hover {
+            color: var(--primary);
+        }
+
+        /* 模态框 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background-color: var(--dark-light);
+            border-radius: 12px;
+            width: 450px;
+            max-width: 90%;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transform: translateY(20px);
+            transition: all 0.3s;
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            font-size: 22px;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .close-modal:hover {
+            color: var(--text);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            background-color: var(--dark);
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-secondary {
+            background-color: var(--gray);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--light-gray);
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background-color: #c5221f;
+        }
+
+        /* 登录模态框 */
+        .login-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .login-content {
+            background-color: var(--dark-light);
+            border-radius: 12px;
+            width: 400px;
+            max-width: 90%;
+            padding: 30px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header i {
+            font-size: 48px;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .login-header h2 {
+            font-size: 24px;
+        }
+
+        .login-form .form-group {
+            margin-bottom: 25px;
+        }
+
+        .login-form .btn {
+            margin-top: 10px;
+        }
+
+        /* 通知 */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--dark-light);
+            border-left: 4px solid var(--primary);
+            border-radius: 6px;
+            padding: 15px 20px;
+            max-width: 350px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transform: translateX(120%);
+            transition: transform 0.3s;
+            z-index: 3000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification i {
+            font-size: 20px;
+            margin-right: 15px;
+            color: var(--primary);
+        }
+
+        .notification.success i {
+            color: var(--secondary);
+        }
+
+        .notification.error i {
+            color: var(--danger);
+        }
+
+        .notification.warning i {
+            color: var(--warning);
+        }
+
+        .notification-content h4 {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .notification-content p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 70px;
+                padding: 15px 10px;
+            }
+
+            .logo h1,
+            .nav-title,
+            .nav-item span,
+            .storage-config {
+                display: none;
+            }
+
+            .logo {
+                justify-content: center;
+                padding-bottom: 15px;
+            }
+
+            .logo i {
+                margin-right: 0;
+            }
+
+            .nav-item {
+                justify-content: center;
+                padding: 15px 0;
+            }
+
+            .nav-item i {
+                margin-right: 0;
+                font-size: 20px;
+            }
+
+            .password-list {
+                width: 250px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                padding: 10px;
+                border-right: none;
+                border-bottom: 1px solid var(--gray);
+            }
+
+            .logo {
+                margin-bottom: 0;
+                padding-bottom: 0;
+                border-bottom: none;
+                margin-right: 15px;
+            }
+
+            .nav-section {
+                margin-bottom: 0;
+                display: flex;
+            }
+
+            .nav-item {
+                margin-bottom: 0;
+                margin-right: 5px;
+            }
+
+            .storage-config {
+                display: none;
+            }
+
+            .content-area {
+                flex-direction: column;
+            }
+
+            .password-list {
+                width: 100%;
+                height: 300px;
+                border-right: none;
+                border-bottom: 1px solid var(--gray);
+            }
+        }
+
+        /* 新增折叠按钮样式 */
+        .collapse-container {
+            position: absolute;
+            top: 25px;
+            right: 10px;
+            z-index: 10;
+        }
+
+        .collapse-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+
+        .collapse-btn:hover {
+            color: var(--primary);
+        }
+
+        /* 折叠状态下的侧边栏样式 */
+        .sidebar.collapsed {
+            width: 70px;
+        }
+
+
+        .sidebar.collapsed .logo h1,
+        .sidebar.collapsed .nav-title,
+        .sidebar.collapsed .nav-item span,
+        .sidebar.collapsed .storage-config {
+            display: none;
+        }
+
+        .sidebar.collapsed .logo {
+            justify-content: center;
+            padding-bottom: 15px;
+        }
+
+        .sidebar.collapsed .logo i {
+            margin-right: 0;
+        }
+
+        .sidebar.collapsed .nav-item {
+            justify-content: center;
+            padding: 15px 0;
+        }
+
+        .sidebar.collapsed .nav-item i {
+            margin-right: 0;
+            font-size: 20px;
+        }
+
+        .sidebar.collapsed .collapse-btn {
+            right: 50%;
+            transform: translateX(50%);
+        }
+
+        /* 历史版本模态框样式 */
+        .version-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--light-gray);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .version-item:hover {
+            background-color: var(--gray);
+        }
+
+        .version-date {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .version-message {
+            font-size: 14px;
+            margin-top: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .version-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        /* 2. 密码模块框滑动功能 */
+        .password-detail {
+            max-height: calc(100vh - 150px);
+            overflow-y: auto;
+        }
+
+
+
+
+        /* 4. 收藏和最近使用功能样式 */
+        .favorite-star {
+            color: var(--warning);
+            margin-left: 10px;
+            cursor: pointer;
+        }
+
+        .recent-indicator {
+            color: var(--secondary);
+            margin-left: 10px;
+            font-size: 12px;
+        }
+
+
+
+        /* 模态框滚动支持 */
+        .modal-content {
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        /* 折叠按钮位置优化 */
+        .collapse-container {
+            position: absolute;
+            top: 25px;
+            right: 15px;
+            z-index: 10;
+        }
+
+        .collapse-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .collapse-btn:hover {
+            color: var(--primary);
+        }
+
+        /* 安全审计功能完善 */
+        .audit-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--light-gray);
+        }
+
+        .audit-result {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .audit-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 14px;
+        }
+
+        .audit-good {
+            background-color: var(--secondary);
+        }
+
+        .audit-warning {
+            background-color: var(--warning);
+        }
+
+        .audit-danger {
+            background-color: var(--danger);
+        }
+
+        .audit-info {
+            flex: 1;
+        }
+
+        .audit-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .audit-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* 偏好设置功能完善 */
+        .preference-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--light-gray);
+        }
+
+        .preference-label {
+            font-size: 16px;
+        }
+
+        .preference-control {
+            display: flex;
+            align-items: center;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--gray);
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.toggle-slider {
+            background-color: var(--primary);
+        }
+
+        input:checked+.toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        /* 生成密码功能完善 */
+        .password-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .option-item input {
+            margin-right: 8px;
+        }
+
+        /* 移除滑块样式 */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: var(--dark);
+            border-radius: 5px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: var(--primary-dark);
+            transform: scale(1.2);
+        }
+
+        /* 优化滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+
+
+        /* 优化生成密码模态框布局 */
+        #generatePasswordModal .form-group {
+            margin-bottom: 20px;
+        }
+
+        #generatePasswordModal .password-display {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        #generatePasswordModal #generatedPassword {
+            flex: 1;
+            padding: 12px 15px;
+            background-color: var(--dark);
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: monospace;
+            font-size: 16px;
+        }
+
+        #generatePasswordModal #copyGeneratedPassword {
+            width: auto;
+            padding: 12px 15px;
+            white-space: nowrap;
+        }
+
+        /* 密码强度条样式 */
+        .password-strength-meter {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .strength-bar {
+            flex: 1;
+            height: 6px;
+            background-color: var(--light-gray);
+            border-radius: 3px;
+        }
+
+        .strength-bar.weak {
+            background-color: var(--danger);
+        }
+
+        .strength-bar.moderate {
+            background-color: var(--warning);
+        }
+
+        .strength-bar.strong {
+            background-color: var(--secondary);
+        }
+
+        .strength-bar.very-strong {
+            background-color: var(--primary);
+        }
+
+        /* 分类选择器样式 */
+        .category-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .category-selector select {
+            flex: 1;
+            padding: 10px;
+            background-color: var(--dark-light);
+            border: 1px solid var(--light-gray);
+            border-radius: 6px;
+            color: var(--text);
+        }
+
+        .category-selector button {
+            width: auto;
+        }
+    </style>
+
+
+</head>
+
+<body>
+    <!-- 登录界面 -->
+    <div class="login-modal" id="loginModal">
+        <div class="login-content">
+            <div class="login-header">
+                <i class="fas fa-lock"></i>
+                <h2>SecurePass 密码管理器</h2>
+            </div>
+
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label for="masterPassword">主密码</label>
+                    <input type="password" id="masterPassword" placeholder="输入您的主密码" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">确认密码</label>
+                    <input type="password" id="confirmPassword" placeholder="再次输入主密码">
+                </div>
+
+                <button type="submit" class="btn" id="loginBtn">解锁密码库</button>
+
+                <div style="margin-top: 20px; text-align: center;">
+                    <p style="font-size: 14px; color: var(--text-secondary);">
+                        首次使用？设置主密码后开始使用
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 主界面 -->
+    <div class="container" id="appContainer" style="display: none;">
+        <!-- 侧边导航 -->
+        <div class="sidebar">
+            <!-- 在侧边栏.logo后面添加折叠按钮 -->
+            <div class="logo">
+                <i class="fas fa-lock"></i>
+                <h1>SecurePass</h1>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">主菜单</div>
+                <div class="nav-item active" data-view="all">
+                    <i class="fas fa-key"></i>
+                    <span>所有密码</span>
+                </div>
+                <div class="nav-item" data-view="favorites">
+                    <i class="fas fa-star"></i>
+                    <span>收藏夹</span>
+                </div>
+                <div class="nav-item" data-view="recent">
+                    <i class="fas fa-history"></i>
+                    <span>最近使用</span>
+                </div>
+            </div>
+
+            <!-- 在导航菜单中添加历史版本入口 -->
+            <div class="nav-section">
+                <div class="nav-title">工具</div>
+                <div class="nav-item" id="generatePasswordBtn">
+                    <i class="fas fa-magic"></i>
+                    <span>生成密码</span>
+                </div>
+                <div class="nav-item" id="versionsBtn">
+                    <i class="fas fa-code-branch"></i>
+                    <span>历史版本</span>
+                </div>
+                <div class="nav-item" id="securityAuditBtn">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>安全审计</span>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">设置</div>
+                <div class="nav-item" id="preferencesBtn">
+                    <i class="fas fa-cog"></i>
+                    <span>偏好设置</span>
+                </div>
+                <div class="nav-item" id="storageSettingsBtn">
+                    <i class="fas fa-cloud"></i>
+                    <span>存储设置</span>
+                </div>
+                <div class="nav-item" id="exportConfigBtn">
+                    <i class="fas fa-file-export"></i>
+                    <span>导出配置</span>
+                </div>
+            </div>
+
+            <div class="storage-config">
+                <h3><i class="fas fa-database"></i> 存储配置</h3>
+                <p id="storageStatus">未配置远程存储</p>
+                <button class="btn btn-outline" id="configureStorageBtn">配置存储</button>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <div class="top-bar">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="搜索密码...">
+                </div>
+                <div class="actions">
+                    <div class="action-btn" id="syncBtn">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
+                    <div class="action-btn" id="addPasswordBtn">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="action-btn" id="exportBtn">
+                        <i class="fas fa-download"></i>
+                    </div>
+                    <div class="action-btn" id="importBtn">
+                        <i class="fas fa-upload"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-area">
+                <!-- 密码列表 -->
+                <div class="password-list">
+                    <div class="list-header">
+                        <h2>所有密码 <span class="password-count" id="passwordCount">0</span></h2>
+                    </div>
+
+                    <div class="password-items" id="passwordItems">
+                        <!-- 密码项将通过JS动态加载 -->
+                    </div>
+                </div>
+
+                <!-- 密码详情 -->
+                <div class="password-detail">
+                    <div class="detail-header">
+                        <div class="detail-title">
+                            <div class="detail-favicon">
+                                <i class="fas fa-key"></i>
+                            </div>
+                            <h2 id="detailTitle">选择密码项</h2>
+                        </div>
+                        <div class="detail-actions">
+                            <button class="btn btn-outline" id="editPasswordBtn" disabled>
+                                <i class="fas fa-edit"></i> 编辑
+                            </button>
+                            <button class="btn btn-outline" id="deletePasswordBtn" disabled>
+                                <i class="fas fa-trash-alt"></i> 删除
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="detail-content" id="detailContent">
+                        <div class="info-group">
+                            <h3>账户信息</h3>
+                            <div class="info-row">
+                                <div class="info-label">网站/应用</div>
+                                <div class="info-value" id="detailSite">-</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">用户名</div>
+                                <div class="info-value" id="detailUsername">-</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">密码</div>
+                                <div class="password-field">
+                                    <div class="password-text" id="detailPassword">••••••••••••</div>
+                                    <div class="password-actions">
+                                        <button class="reveal-btn" id="revealPasswordBtn">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="copy-btn" id="copyPasswordBtn">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-group">
+                            <h3>附加信息</h3>
+                            <div class="info-row">
+                                <div class="info-label">备注</div>
+                                <div class="info-value" id="detailNotes">-</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">创建时间</div>
+                                <div class="info-value" id="detailCreated">-</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">最后修改</div>
+                                <div class="info-value" id="detailUpdated">-</div>
+                            </div>
+                        </div>
+
+                        <div class="info-group">
+                            <h3>安全信息</h3>
+                            <div class="info-row">
+                                <div class="info-label">密码强度</div>
+                                <div class="info-value" id="detailStrength">-</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">密码泄露</div>
+                                <div class="info-value" id="detailBreached">-</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">重复使用</div>
+                                <div class="info-value" id="detailReused">-</div>
+                            </div>
+                        </div>
+
+                        <!-- 新增分类设置 -->
+                        <div class="info-group">
+                            <h3>分类设置</h3>
+                            <div class="info-row">
+                                <div class="info-label">当前分类</div>
+                                <div class="info-value" id="detailCategory">未分类</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-value">
+                                    <div class="category-selector">
+                                        <select id="categorySelect">
+                                            <option value="none">未分类</option>
+                                            <option value="work">工作</option>
+                                            <option value="personal">个人</option>
+                                            <option value="finance">金融</option>
+                                            <option value="social">社交</option>
+                                            <option value="shop">购物</option>
+                                            <option value="wifi">无线网</option>
+                                            <option value="ssh">SSH</option>
+                                            <option value="other">其他</option>
+                                        </select>
+                                        <button class="btn btn-outline" id="saveCategoryBtn">
+                                            <i class="fas fa-save"></i> 保存分类
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 新增收藏功能按钮 -->
+                        <div class="info-group">
+                            <h3>操作</h3>
+                            <div class="info-row">
+                                <div class="info-value">
+                                    <button class="btn btn-outline" id="toggleFavoriteBtn">
+                                        <i class="far fa-star"></i> 添加到收藏夹
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加/编辑密码模态框 -->
+    <div class="modal" id="passwordModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">添加新密码</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+
+            <form id="passwordForm">
+                <input type="hidden" id="passwordId">
+
+                <div class="form-group">
+                    <label for="siteName">网站/应用名称</label>
+                    <input type="text" id="siteName" placeholder="例如：Google" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="siteUrl">网站URL</label>
+                    <input type="url" id="siteUrl" placeholder="https:// (可选)">
+                </div>
+
+                <div class="form-group">
+                    <label for="username">用户名/邮箱</label>
+                    <input type="text" id="username" placeholder="输入用户名或邮箱" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1; position: relative;">
+                            <input type="password" id="password" placeholder="输入密码" required style="width: 100%;">
+                            <button type="button" id="togglePasswordVisibility" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); 
+                                           background: none; border: none; color: var(--text-secondary);">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <button type="button" class="btn" id="generatePasswordBtnModal" style="width: auto;">
+                            <i class="fas fa-dice"></i> 生成
+                        </button>
+                    </div>
+                    <div style="margin-top: 10px; display: flex; align-items: center;">
+                        <input type="range" id="passwordLength" min="8" max="32" value="16" style="flex: 1;">
+                        <span id="lengthValue" style="margin-left: 10px; width: 40px;">16</span>
+                    </div>
+                    <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 10px;">
+                        <label style="display: flex; align-items: center;">
+                            <input type="checkbox" id="uppercase" checked> 大写字母
+                        </label>
+                        <label style="display: flex; align-items: center;">
+                            <input type="checkbox" id="lowercase" checked> 小写字母
+                        </label>
+                        <label style="display: flex; align-items: center;">
+                            <input type="checkbox" id="numbers" checked> 数字
+                        </label>
+                        <label style="display: flex; align-items: center;">
+                            <input type="checkbox" id="symbols" checked> 符号
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="notes">备注</label>
+                    <textarea id="notes" placeholder="添加备注信息（可选）"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelPasswordBtn">取消</button>
+                    <button type="submit" class="btn" id="savePasswordBtn">保存密码</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 存储设置模态框 -->
+    <div class="modal" id="storageModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>存储设置</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+
+            <div class="form-group">
+                <label>存储类型</label>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button type="button" class="btn btn-outline storage-type" data-type="local">本地存储</button>
+                    <button type="button" class="btn btn-outline storage-type" data-type="github">GitHub</button>
+                    <button type="button" class="btn btn-outline storage-type" data-type="webdav">WebDAV</button>
+                </div>
+            </div>
+
+            <div id="githubConfig" style="display: none;">
+                <div class="form-group">
+                    <label for="githubToken">GitHub 访问令牌</label>
+                    <input type="password" id="githubToken" placeholder="输入 GitHub 个人访问令牌">
+                </div>
+
+                <div class="form-group">
+                    <label for="githubRepo">GitHub 仓库</label>
+                    <input type="text" id="githubRepo" placeholder="用户名/仓库名">
+                </div>
+            </div>
+
+            <div id="webdavConfig" style="display: none;">
+                <div class="form-group">
+                    <label for="webdavUrl">WebDAV URL</label>
+                    <input type="url" id="webdavUrl" placeholder="https://example.com/dav">
+                </div>
+
+                <div class="form-group">
+                    <label for="webdavUsername">用户名</label>
+                    <input type="text" id="webdavUsername" placeholder="输入用户名">
+                </div>
+
+                <div class="form-group">
+                    <label for="webdavPassword">密码</label>
+                    <input type="password" id="webdavPassword" placeholder="输入密码">
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelStorageBtn">取消</button>
+                <button type="button" class="btn" id="saveStorageBtn">保存配置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 历史版本模态框 -->
+    <div class="modal" id="versionsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>历史版本</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <!-- 添加loading层 -->
+            <div class="loading-overlay" id="versionsLoading"
+                style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 10; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-spinner fa-spin fa-2x" style="color: white;"></i>
+            </div>
+            <div class="version-list" id="versionList">
+                <!-- 版本将通过JS动态加载 -->
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="closeVersionsBtn">关闭</button>
+            </div>
+        </div>
+    </div>
+    <!-- 安全审计模态框 -->
+    <div class="modal" id="securityAuditModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>安全审计</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+
+            <div class="audit-section">
+                <div class="audit-result">
+                    <div class="audit-icon audit-good">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div class="audit-info">
+                        <div class="audit-title">密码强度</div>
+                        <div class="audit-description">检测密码的复杂性和安全性</div>
+                    </div>
+                    <div class="audit-value" id="auditStrength">良好</div>
+                </div>
+
+                <div class="audit-result">
+                    <div class="audit-icon audit-warning">
+                        <i class="fas fa-exclamation"></i>
+                    </div>
+                    <div class="audit-info">
+                        <div class="audit-title">密码泄露</div>
+                        <div class="audit-description">检查密码是否在已知泄露数据库中</div>
+                    </div>
+                    <div class="audit-value" id="auditBreached">安全</div>
+                </div>
+
+                <div class="audit-result">
+                    <div class="audit-icon audit-danger">
+                        <i class="fas fa-times"></i>
+                    </div>
+                    <div class="audit-info">
+                        <div class="audit-title">重复使用</div>
+                        <div class="audit-description">检测密码是否在多个账户重复使用</div>
+                    </div>
+                    <div class="audit-value" id="auditReused">2个重复</div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="closeAuditBtn">关闭</button>
+                <button type="button" class="btn" id="startAuditCheck">开始检查</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 生成密码模态框 -->
+    <div class="modal" id="generatePasswordModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>生成安全密码</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="genPasswordLength">密码长度</label>
+                <div style="display: flex; align-items: center;">
+                    <input type="range" id="genPasswordLength" min="8" max="32" value="16" style="flex: 1;">
+                    <span id="genLengthValue" style="margin-left: 10px; width: 40px;">16</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>包含字符类型</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+                    <label style="display: flex; align-items: center;">
+                        <input type="checkbox" id="genUppercase" checked> 大写字母 (A-Z)
+                    </label>
+                    <label style="display: flex; align-items: center;">
+                        <input type="checkbox" id="genLowercase" checked> 小写字母 (a-z)
+                    </label>
+                    <label style="display: flex; align-items: center;">
+                        <input type="checkbox" id="genNumbers" checked> 数字 (0-9)
+                    </label>
+                    <label style="display: flex; align-items: center;">
+                        <input type="checkbox" id="genSymbols" checked> 符号 (!@#$%^&*)
+                    </label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="generatedPassword">生成的密码</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="generatedPassword" readonly style="flex: 1;">
+                    <button type="button" class="btn" id="copyGeneratedPassword">
+                        <i class="fas fa-copy"></i> 复制
+                    </button>
+                </div>
+            </div>
+            <!-- 在生成密码模态框中添加密码强度条 -->
+            <div class="form-group">
+                <label>密码强度</label>
+                <div class="password-strength-meter">
+                    <div class="strength-bar"></div>
+                    <div class="strength-bar"></div>
+                    <div class="strength-bar"></div>
+                    <div class="strength-bar"></div>
+                </div>
+                <div id="passwordStrengthText" style="margin-top: 5px; font-size: 14px;"></div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn" id="regeneratePasswordBtn">重新生成</button>
+                <button type="button" class="btn btn-secondary" id="closeGeneratePasswordModal">关闭</button>
+            </div>
+        </div>
+    </div>
+    <!-- 添加同步模态框 -->
+    <div class="modal" id="syncModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>同步到GitHub</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+
+            <div class="form-group">
+                <label for="syncCommitMessage">提交信息</label>
+                <input type="text" id="syncCommitMessage" placeholder="输入提交信息（可选）" value="更新密码库">
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelSyncBtn">取消</button>
+                <button type="button" class="btn" id="confirmSyncBtn">开始同步</button>
+            </div>
+        </div>
+    </div>
+    <!-- 安全审计检查模态框 -->
+    <div class="modal" id="auditModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>安全审计</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+
+            <div class="audit-results">
+                <div class="audit-item">
+                    <div class="audit-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="audit-info">
+                        <h3>弱密码检测</h3>
+                        <p id="weakPasswordsCount">扫描中...</p>
+                    </div>
+                </div>
+
+                <div class="audit-item">
+                    <div class="audit-icon">
+                        <i class="fas fa-redo"></i>
+                    </div>
+                    <div class="audit-info">
+                        <h3>重复密码</h3>
+                        <p id="reusedPasswordsCount">扫描中...</p>
+                    </div>
+                </div>
+
+                <div class="audit-item">
+                    <div class="audit-icon">
+                        <i class="fas fa-calendar-times"></i>
+                    </div>
+                    <div class="audit-info">
+                        <h3>过期密码</h3>
+                        <p id="expiredPasswordsCount">扫描中...</p>
+                    </div>
+                </div>
+
+                <div class="audit-item">
+                    <div class="audit-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="audit-info">
+                        <h3>泄露风险</h3>
+                        <p id="breachedPasswordsCount">扫描中...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn" id="runAuditBtn">
+                    <i class="fas fa-play"></i> 运行审计
+                </button>
+                <button type="button" class="btn btn-secondary" id="closeAuditBtn2">关闭</button>
+            </div>
+        </div>
+    </div>
+    <!-- 偏好设置模态框 -->
+    <div class="modal" id="preferencesModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>偏好设置</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+
+            <div class="form-group">
+                <label for="autoLockTime">自动锁定时间</label>
+                <select id="autoLockTime">
+                    <option value="1">1分钟</option>
+                    <option value="5" selected>5分钟</option>
+                    <option value="15">15分钟</option>
+                    <option value="30">30分钟</option>
+                    <option value="60">60分钟</option>
+                    <option value="0">从不</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="backupFrequency">自动备份频率</label>
+                <select id="backupFrequency">
+                    <option value="daily">每天</option>
+                    <option value="weekly" selected>每周</option>
+                    <option value="monthly">每月</option>
+                    <option value="never">从不</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="themePreference">主题偏好</label>
+                <select id="themePreference">
+                    <option value="dark" selected>深色模式</option>
+                    <option value="light">浅色模式</option>
+                    <option value="system">跟随系统</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="passwordGenerator">密码生成器设置</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px;">
+                    <label style="display: flex; align-items: center;">
+                        <input type="checkbox" id="defaultUppercase" checked> 默认包含大写字母
+                    </label>
+                    <label style="display: flex; align-items: center;">
+                        <input type="checkbox" id="defaultLowercase" checked> 默认包含小写字母
+                    </label>
+                    <label style="display: flex; align-items: center;">
+                        <input type="checkbox" id="defaultNumbers" checked> 默认包含数字
+                    </label>
+                    <label style="display: flex; align-items: center;">
+                        <input type="checkbox" id="defaultSymbols" checked> 默认包含符号
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn" id="savePreferencesBtn">保存设置</button>
+                <button type="button" class="btn btn-secondary" id="cancelPreferencesBtn">取消</button>
+            </div>
+        </div>
+    </div>
+    <!-- 通知 -->
+    <div class="notification" id="notification">
+        <i class="fas fa-info-circle"></i>
+        <div class="notification-content">
+            <h4 id="notificationTitle">通知标题</h4>
+            <p id="notificationMessage">通知内容</p>
+        </div>
+    </div>
+
+    <script>
+        // 密码管理器核心功能
+        class PasswordManager {
+            constructor() {
+                // 初始化属性
+                this.masterKey = null;
+                this.commitMsg = null;
+                this.passwords = [];
+                this.currentPasswordId = null;
+                this.storageConfig = {
+                    type: 'local',
+                    github: {},
+                    webdav: {}
+                };
+                this.sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                this.favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+                this.recentPasswords = JSON.parse(localStorage.getItem('recentPasswords') || '[]');
+                this.preferences = JSON.parse(localStorage.getItem('preferences') || '{}');
+
+                this.init();
+            }
+
+            // 初始化管理器
+            init() {
+                this.loadStorageConfig();
+                this.loadPasswords();
+                this.setupEventListeners();
+                this.applySidebarState();
+                // 加载保存的设置
+                this.loadPreferences();
+                this.setupModalCloseHandlers();
+            }
+
+            // 在PasswordManager类中添加方法
+            setupModalCloseHandlers() {
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            modal.classList.remove('active');
+                        }
+                    });
+                });
+            }
+            // 设置事件监听器
+            setupEventListeners() {
+                // 登录表单
+                document.getElementById('loginForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleLogin();
+                });
+
+                // 添加密码按钮
+                document.getElementById('addPasswordBtn').addEventListener('click', () => {
+                    this.showPasswordModal();
+                });
+
+                // 同步按钮事件
+                document.getElementById('syncBtn').addEventListener('click', () => {
+                    if (this.storageConfig.type === 'github') {
+                        this.showSyncModal();
+                    } else {
+                        this.syncPasswords();
+                    }
+                });
+
+                // 确认同步
+                document.getElementById('confirmSyncBtn').addEventListener('click', () => {
+                    this.commitMsg = document.getElementById('syncCommitMessage').value
+                    console.log(this.commitMsg);
+
+                    this.syncPasswords();
+                    document.getElementById('syncModal').classList.remove('active');
+                });
+
+                // 取消同步
+                document.getElementById('cancelSyncBtn').addEventListener('click', () => {
+                    this.hideSyncModal();
+                });
+                // 导入按钮
+                document.getElementById('importBtn').addEventListener('click', () => {
+                    this.importPasswords();
+                });
+
+                // 导出按钮
+                document.getElementById('exportBtn').addEventListener('click', () => {
+                    this.exportPasswords();
+                });
+
+                // 存储设置按钮
+                document.getElementById('storageSettingsBtn').addEventListener('click', () => {
+                    this.showStorageModal();
+                });
+
+                // 配置存储按钮
+                document.getElementById('configureStorageBtn').addEventListener('click', () => {
+                    this.showStorageModal();
+                });
+
+                // 密码表单
+                document.getElementById('passwordForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.savePassword();
+                });
+
+                // 取消密码按钮
+                document.getElementById('cancelPasswordBtn').addEventListener('click', () => {
+                    this.hideAddPasswordModal();
+                });
+
+                // 关闭模态框按钮
+                document.querySelectorAll('.close-modal').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this.hideAddPasswordModal();
+                        this.hideStorageModal();
+                        this.hidePreferencesModal();
+                        this.hideVersionsModal();
+                        this.hideGeneratePasswordModal();
+                        this.hideSecurityAuditModal();
+                        this.hideSyncModal();
+                    });
+                });
+
+                // 密码显示/隐藏
+                document.getElementById('revealPasswordBtn').addEventListener('click', () => {
+                    this.togglePasswordVisibility();
+                });
+
+                // 复制密码
+                document.getElementById('copyPasswordBtn').addEventListener('click', () => {
+                    this.copyPasswordToClipboard();
+                });
+
+                // 编辑密码
+                document.getElementById('editPasswordBtn').addEventListener('click', () => {
+                    this.editPassword();
+                });
+
+                // 删除密码
+                document.getElementById('deletePasswordBtn').addEventListener('click', () => {
+                    this.deletePassword();
+                });
+
+                // 生成密码按钮
+                document.getElementById('generatePasswordBtnModal').addEventListener('click', () => {
+                    this.generatePassword();
+                });
+
+                // 密码长度滑块
+                document.getElementById('passwordLength').addEventListener('input', () => {
+                    document.getElementById('lengthValue').textContent =
+                        document.getElementById('passwordLength').value;
+                });
+
+                // 添加密码可见性切换功能
+                document.getElementById('togglePasswordVisibility').addEventListener('click', function () {
+                    const passwordInput = document.getElementById('password');
+                    const icon = this.querySelector('i');
+
+                    if (passwordInput.type === 'password') {
+                        passwordInput.type = 'text';
+                        icon.classList.remove('fa-eye');
+                        icon.classList.add('fa-eye-slash');
+                    } else {
+                        passwordInput.type = 'password';
+                        icon.classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                    }
+                });
+
+                // 存储类型选择
+                document.querySelectorAll('.storage-type').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this.selectStorageType(btn.dataset.type);
+                    });
+                });
+
+                // 保存存储配置
+                document.getElementById('saveStorageBtn').addEventListener('click', () => {
+                    this.saveStorageConfig();
+                });
+
+                // 取消存储配置
+                document.getElementById('cancelStorageBtn').addEventListener('click', () => {
+                    this.hideStorageModal();
+                });
+
+                // 搜索输入
+                document.getElementById('searchInput').addEventListener('input', () => {
+                    this.filterPasswords();
+                });
+                // 新增折叠按钮事件
+                // document.getElementById('collapseBtn').addEventListener('click', () => {
+                //     this.toggleSidebar();
+                // });
+
+                // 新增历史版本按钮事件
+                document.getElementById('versionsBtn').addEventListener('click', () => {
+                    this.showVersionsModal();
+                });
+
+                // 关闭历史版本模态框
+                document.getElementById('closeVersionsBtn').addEventListener('click', () => {
+                    this.hideVersionsModal();
+                });
+
+                // 新增收藏按钮事件
+                document.getElementById('toggleFavoriteBtn').addEventListener('click', () => {
+                    this.toggleFavorite();
+                });
+
+                // 导航菜单点击事件
+                document.querySelectorAll('.nav-item[data-view]').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const view = item.dataset.view;
+                        this.filterPasswordsByView(view);
+                        // 更新活动状态
+                        document.querySelectorAll('.nav-item').forEach(nav => {
+                            nav.classList.remove('active');
+                        });
+                        item.classList.add('active');
+                    });
+                });
+
+                // 生成密码按钮
+                document.getElementById('generatePasswordBtn').addEventListener('click', () => {
+                    this.showGeneratePasswordModal();
+                });
+                // 重新生成密码按钮
+                document.getElementById('regeneratePasswordBtn').addEventListener('click', () => {
+                    this.genPassword();
+                });
+                // 添加事件监听：当复选框变化时重新生成密码
+                document.getElementById('genUppercase').addEventListener('change', this.genPassword.bind(this));
+                document.getElementById('genLowercase').addEventListener('change', this.genPassword.bind(this));
+                document.getElementById('genNumbers').addEventListener('change', this.genPassword.bind(this));
+                document.getElementById('genSymbols').addEventListener('change', this.genPassword.bind(this));
+
+                // 关闭生成密码模态框
+                document.getElementById('closeGeneratePasswordModal').addEventListener('click', () => {
+                    this.hideGeneratePasswordModal();
+                });
+
+                // 复制生成的密码
+                document.getElementById('copyGeneratedPassword').addEventListener('click', () => {
+                    this.copyGeneratedPassword();
+                });
+
+                // 密码长度滑块
+                document.getElementById('genPasswordLength').addEventListener('input', () => {
+                    document.getElementById('genLengthValue').textContent =
+                        document.getElementById('genPasswordLength').value;
+                    this.genPassword();
+                });
+
+
+                // 安全审计按钮
+                document.getElementById('securityAuditBtn').addEventListener('click', () => {
+                    this.showSecurityAuditModal();
+                });
+
+
+                // 开始运行安全审计按钮
+                document.getElementById('startAuditCheck').addEventListener('click', () => {
+                    this.showAuditModal();
+                });
+                // 运行审计按钮
+                document.getElementById('runAuditBtn').addEventListener('click', () => {
+                    this.runSecurityAudit();
+                });
+
+                // 关闭安全审计模态框
+                document.getElementById('closeAuditBtn').addEventListener('click', () => {
+                    this.hideSecurityAuditModal();
+                });
+
+                document.getElementById('closeAuditBtn2').addEventListener('click', () => {
+                    this.hideSecurityAuditModal();
+                });
+
+                // 偏好设置按钮事件
+                document.getElementById('preferencesBtn').addEventListener('click', () => {
+                    this.showPreferencesModal();
+                });
+
+                // 保存偏好设置
+                document.getElementById('savePreferencesBtn').addEventListener('click', () => {
+                    this.savePreferences();
+                });
+
+                // 取消偏好设置
+                document.getElementById('cancelPreferencesBtn').addEventListener('click', () => {
+                    this.hidePreferencesModal();
+                });
+
+                // 在setupEventListeners中添加事件监听
+                document.getElementById('exportConfigBtn').addEventListener('click', () => {
+                    this.exportConfig();
+                });
+
+                // 保存分类按钮事件
+                document.getElementById('saveCategoryBtn').addEventListener('click', () => {
+                    const newCategory = document.getElementById('categorySelect').value;
+                    this.updatePasswordCategory(this.currentPasswordId, newCategory);
+                });
+
+            }
+            // 添加显示生成密码模态框的方法
+            showGeneratePasswordModal() {
+                // 初始化生成密码
+                this.genPassword();
+                document.getElementById('generatePasswordModal').classList.add('active');
+            }
+            // 切换侧边栏折叠状态
+            toggleSidebar() {
+                this.sidebarCollapsed = !this.sidebarCollapsed;
+                localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed);
+                this.applySidebarState();
+            }
+
+            // 应用侧边栏状态
+            applySidebarState() {
+                const sidebar = document.querySelector('.sidebar');
+                const collapseBtn = document.getElementById('collapseBtn');
+
+                if (this.sidebarCollapsed) {
+                    sidebar.classList.add('collapsed');
+                    collapseBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                } else {
+                    sidebar.classList.remove('collapsed');
+                    collapseBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                }
+            }
+
+            // 显示同步模态框
+            showSyncModal() {
+                document.getElementById('syncModal').classList.add('active');
+            }
+            // 隐藏同步模态框
+            hideSyncModal() {
+                document.getElementById('syncModal').classList.remove('active');
+            }
+
+
+            // 显示历史版本模态框
+            showVersionsModal() {
+                if (this.storageConfig.type !== 'github') {
+                    this.showNotification('信息', '历史版本功能仅支持GitHub存储', 'info');
+                    return;
+                }
+
+                this.fetchGitHubVersions();
+                document.getElementById('versionsModal').classList.add('active');
+            }
+            // 修改收藏功能
+            toggleFavorite() {
+                if (!this.currentPasswordId) return;
+
+                const index = this.passwords.findIndex(p => p.id === this.currentPasswordId);
+                if (index === -1) return;
+
+                this.passwords[index].isFavorite = !this.passwords[index].isFavorite;
+                this.savePasswords();
+
+                // 更新UI
+                const favoriteBtn = document.getElementById('toggleFavoriteBtn');
+                if (this.passwords[index].isFavorite) {
+                    favoriteBtn.innerHTML = '<i class="fas fa-star"></i> 已收藏';
+                    favoriteBtn.classList.add('favorited');
+                    this.showNotification('成功', '已添加到收藏夹', 'success');
+                } else {
+                    favoriteBtn.innerHTML = '<i class="far fa-star"></i> 添加到收藏夹';
+                    favoriteBtn.classList.remove('favorited');
+                    this.showNotification('成功', '已从收藏夹移除', 'success');
+                }
+
+                // 如果当前在收藏视图，刷新列表
+                if (document.querySelector('.nav-item.active').dataset.view === 'favorites') {
+                    this.filterPasswordsByView('favorites');
+                }
+            }
+
+            // 记录最近访问
+            recordRecentAccess(passwordId) {
+                // 移除现有记录（如果存在）
+                const index = this.recentPasswords.indexOf(passwordId);
+                if (index !== -1) {
+                    this.recentPasswords.splice(index, 1);
+                }
+
+                // 添加到最近访问列表开头
+                this.recentPasswords.unshift(passwordId);
+
+                // 限制最近访问数量
+                if (this.recentPasswords.length > 10) {
+                    this.recentPasswords.pop();
+                }
+
+                // 保存到本地存储
+                localStorage.setItem('recentPasswords', JSON.stringify(this.recentPasswords));
+            }
+
+            // 根据视图过滤密码
+            filterPasswordsByView(view) {
+                let filteredPasswords = [];
+
+                switch (view) {
+                    case 'all':
+                        filteredPasswords = this.passwords;
+                        break;
+                    case 'favorites':
+                        filteredPasswords = this.passwords.filter(p => this.favorites.includes(p.id));
+                        break;
+                    case 'recent':
+                        // 获取最近访问的密码项
+                        filteredPasswords = this.recentPasswords.map(id =>
+                            this.passwords.find(p => p.id === id)
+                        ).filter(p => p); // 过滤掉可能不存在的项
+                        break;
+                }
+
+                this.renderPasswordList(filteredPasswords);
+            }
+
+            // 渲染密码列表
+            renderPasswordList(passwords = this.passwords) {
+                const container = document.getElementById('passwordItems');
+                const countElement = document.getElementById('passwordCount');
+
+                // 清空容器
+                container.innerHTML = '';
+
+                // 更新计数
+                countElement.textContent = passwords.length;
+
+                // 添加密码项
+                passwords.forEach(password => {
+                    const item = document.createElement('div');
+                    item.className = 'password-item';
+                    if (password.id === this.currentPasswordId) {
+                        item.classList.add('active');
+                    }
+                    item.dataset.id = password.id;
+
+                    // 添加收藏和最近访问标记
+                    const isFavorite = this.favorites.includes(password.id);
+                    const isRecent = this.recentPasswords.includes(password.id);
+
+                    item.innerHTML = `
+                        <div class="favicon">
+                            <i class="${password.icon || 'fas fa-key'}"></i>
+                        </div>
+                        <div class="item-info">
+                            <h3>${password.site} 
+                                ${isFavorite ? '<i class="fas fa-star favorite-star"></i>' : ''}
+                                ${isRecent ? '<span class="recent-indicator">最近</span>' : ''}
+                            </h3>
+                            <p>${password.username}</p>
+                        </div>
+                    `;
+
+                    item.addEventListener('click', () => {
+                        this.showPasswordDetails(password.id);
+                        // 记录最近访问
+                        this.recordRecentAccess(password.id);
+                    });
+
+                    container.appendChild(item);
+                });
+            }
+
+            // 隐藏历史版本模态框
+            hideVersionsModal() {
+                document.getElementById('versionsModal').classList.remove('active');
+            }
+            // 隐藏生成密码模态框
+            hideGeneratePasswordModal() {
+                document.getElementById('generatePasswordModal').classList.remove('active');
+            }
+
+            // 获取GitHub历史版本
+            async fetchGitHubVersions() {
+                // 显示loading
+                document.getElementById('versionsLoading').style.display = 'flex';
+                const { token, repo } = this.storageConfig.github;
+
+                if (!token || !repo) {
+                    this.showNotification('错误', 'GitHub配置不完整', 'error');
+                    return;
+                }
+
+                // 提取仓库所有者和仓库名称
+                const [owner, repoName] = repo.split('/');
+                if (!owner || !repoName) {
+                    this.showNotification('错误', '仓库名称格式不正确', 'error');
+                    return;
+                }
+
+                const filePath = 'vault.json';
+                const apiUrl = `https://api.github.com/repos/${owner}/${repoName}/commits?path=${filePath}&per_page=10`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`GitHub API错误: ${errorData.message}`);
+                    }
+
+                    const commits = await response.json();
+                    this.renderVersionList(commits);
+                } catch (error) {
+                    this.showNotification('错误', `获取历史版本失败: ${error.message}`, 'error');
+                } finally {
+                    document.getElementById('versionsLoading').style.display = 'none';
+                }
+            }
+
+            // 渲染版本列表
+            renderVersionList(commits) {
+                const container = document.getElementById('versionList');
+                container.innerHTML = '';
+
+                if (commits.length === 0) {
+                    container.innerHTML = '<p>没有找到历史版本</p>';
+                    return;
+                }
+
+                commits.forEach(commit => {
+                    const commitDate = new Date(commit.commit.committer.date);
+                    const dateStr = commitDate.toLocaleString();
+
+                    const item = document.createElement('div');
+                    item.className = 'version-item';
+                    item.dataset.sha = commit.sha;
+
+                    item.innerHTML = `
+                        <div class="version-date">${dateStr}</div>
+                        <div class="version-message">${commit.commit.message}</div>
+                    `;
+
+                    item.addEventListener('click', () => {
+                        this.restoreVersion(commit.sha);
+                    });
+
+                    container.appendChild(item);
+                });
+            }
+
+            // 恢复历史版本
+            async restoreVersion(sha) {
+                if (!confirm('确定要恢复此版本吗？当前未保存的更改将会丢失。')) {
+                    return;
+                }
+
+                const { token, repo } = this.storageConfig.github;
+                const [owner, repoName] = repo.split('/');
+                const filePath = 'vault.json';
+                const apiUrl = `https://api.github.com/repos/${owner}/${repoName}/contents/${filePath}?ref=${sha}`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`GitHub API错误: ${errorData.message}`);
+                    }
+
+                    const fileData = await response.json();
+                    const content = atob(fileData.content.replace(/\s/g, ''));
+
+                    // 保存到本地存储
+                    localStorage.setItem('vault', content);
+
+                    // 重新加载密码
+                    this.loadPasswords();
+
+                    this.hideVersionsModal();
+                    this.showNotification('成功', '版本已恢复', 'success');
+                } catch (error) {
+                    this.showNotification('错误', `恢复版本失败: ${error.message}`, 'error');
+                }
+            }
+
+            // 处理登录
+            handleLogin() {
+                const masterPassword = document.getElementById('masterPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+
+                if (!masterPassword) {
+                    this.showNotification('错误', '请输入主密码', 'error');
+                    return;
+                }
+
+                // 检查是否是首次登录
+                const isFirstLogin = !localStorage.getItem('vault');
+
+                if (isFirstLogin) {
+                    if (masterPassword !== confirmPassword) {
+                        this.showNotification('错误', '两次输入的密码不一致', 'error');
+                        return;
+                    }
+
+                    // 首次登录，创建新的保险库
+                    this.createVault(masterPassword);
+                } else {
+                    // 尝试解锁保险库
+                    this.unlockVault(masterPassword);
+                }
+            }
+
+            // 创建新的保险库
+            createVault(masterPassword) {
+                try {
+                    // 生成主密钥
+                    this.masterKey = this.deriveKey(masterPassword);
+
+                    // 创建空的密码数组
+                    this.passwords = [];
+
+                    // 保存到本地存储
+                    this.savePasswords();
+
+                    // 显示主界面
+                    document.getElementById('loginModal').style.display = 'none';
+                    document.getElementById('appContainer').style.display = 'flex';
+
+                    this.showNotification('成功', '保险库已创建，请添加密码', 'success');
+                } catch (error) {
+                    this.showNotification('错误', '创建保险库失败: ' + error.message, 'error');
+                }
+            }
+
+            // 解锁保险库
+            unlockVault(masterPassword) {
+                try {
+                    // 派生密钥
+                    this.masterKey = this.deriveKey(masterPassword);
+
+                    // 加载密码
+                    this.loadPasswords();
+
+                    // 显示主界面
+                    document.getElementById('loginModal').style.display = 'none';
+                    document.getElementById('appContainer').style.display = 'flex';
+
+                    this.showNotification('成功', '保险库已解锁', 'success');
+                } catch (error) {
+                    this.showNotification('错误', '解锁失败: ' + error.message, 'error');
+                }
+            }
+
+            // 派生密钥
+            deriveKey(password) {
+                // 在实际应用中应使用更安全的密钥派生算法如PBKDF2
+                // 这里简化处理，实际应用中应使用CryptoJS.PBKDF2
+                return CryptoJS.SHA256(password).toString();
+            }
+
+            // 加密数据
+            encryptData(data) {
+                return CryptoJS.AES.encrypt(data, this.masterKey).toString();
+            }
+
+            // 解密数据
+            decryptData(ciphertext) {
+                const bytes = CryptoJS.AES.decrypt(ciphertext, this.masterKey);
+                return bytes.toString(CryptoJS.enc.Utf8);
+            }
+
+            // 加载密码
+            loadPasswords() {
+                const vault = localStorage.getItem('vault');
+                if (vault) {
+                    try {
+                        const decrypted = this.decryptData(vault);
+                        this.passwords = JSON.parse(decrypted);
+                        this.renderPasswordList();
+                    } catch (error) {
+                        this.showNotification('错误', '解密密码失败: ' + error.message, 'error');
+                    }
+                }
+            }
+
+            // 保存密码
+            savePasswords() {
+                const data = JSON.stringify(this.passwords);
+                const encrypted = this.encryptData(data);
+                localStorage.setItem('vault', encrypted);
+            }
+
+            // 渲染密码列表
+            renderPasswordList() {
+                const container = document.getElementById('passwordItems');
+                const countElement = document.getElementById('passwordCount');
+
+                // 清空容器
+                container.innerHTML = '';
+
+                // 更新计数
+                countElement.textContent = this.passwords.length;
+
+                // 添加密码项
+                this.passwords.forEach(password => {
+                    const item = document.createElement('div');
+                    item.className = 'password-item';
+                    item.dataset.id = password.id;
+
+                    item.innerHTML = `
+                        <div class="favicon">
+                            <i class="${password.icon || 'fas fa-key'}"></i>
+                        </div>
+                        <div class="item-info">
+                            <h3>${password.site}</h3>
+                            <p>${password.username}</p>
+                        </div>
+                    `;
+
+                    item.addEventListener('click', () => {
+                        this.showPasswordDetails(password.id);
+                    });
+
+                    container.appendChild(item);
+                });
+            }
+
+            // 显示密码详情
+            showPasswordDetails(id) {
+                const password = this.passwords.find(p => p.id === id);
+                if (!password) return;
+
+                this.currentPasswordId = id;
+
+                // 更新详情视图
+                document.getElementById('detailTitle').textContent = password.site;
+                document.getElementById('detailSite').textContent = password.siteUrl || '-';
+                document.getElementById('detailUsername').textContent = password.username;
+                document.getElementById('detailPassword').textContent = '••••••••••••';
+                document.getElementById('detailNotes').textContent = password.notes || '-';
+                document.getElementById('detailCreated').textContent = new Date(password.createdAt).toLocaleString();
+                document.getElementById('detailUpdated').textContent = new Date(password.updatedAt).toLocaleString();
+
+                // 启用编辑和删除按钮
+                document.getElementById('editPasswordBtn').disabled = false;
+                document.getElementById('deletePasswordBtn').disabled = false;
+
+                // 重置显示状态
+                document.getElementById('revealPasswordBtn').innerHTML = '<i class="fas fa-eye"></i>';
+
+
+
+                // 更新收藏按钮状态
+                const favoriteBtn = document.getElementById('toggleFavoriteBtn');
+                if (password.isFavorite) {
+                    favoriteBtn.innerHTML = '<i class="fas fa-star"></i> 已收藏';
+                    favoriteBtn.classList.add('favorited');
+                } else {
+                    favoriteBtn.innerHTML = '<i class="far fa-star"></i> 添加到收藏夹';
+                    favoriteBtn.classList.remove('favorited');
+                }
+                // 计算密码强度
+                const strength = this.calculatePasswordStrength(password.password);
+                document.getElementById('detailStrength').textContent = strength.text;
+                document.getElementById('detailStrength').style.color = strength.color;
+
+                // 检查密码重复使用
+                const reusedCount = this.checkPasswordReuse(password.password);
+                document.getElementById('detailReused').textContent = reusedCount > 1 ?
+                    `${reusedCount}个账户使用相同密码` : '未重复使用';
+                document.getElementById('detailReused').style.color = reusedCount > 1 ?
+                    'var(--danger)' : 'var(--secondary)';
+
+
+
+                // 显示分类
+                document.getElementById('detailCategory').textContent = password.category || '未分类';
+                document.getElementById('categorySelect').value = password.category || '未分类';
+
+
+
+                // 记录最近访问
+                this.recordRecentAccess(id);
+
+                // 检查密码泄露（模拟API调用）
+                this.checkPasswordBreach(password.password).then(isBreached => {
+                    document.getElementById('detailBreached').textContent = isBreached ?
+                        '已泄露（高风险）' : '安全（未泄露）';
+                    document.getElementById('detailBreached').style.color = isBreached ?
+                        'var(--danger)' : 'var(--secondary)';
+                });
+            }
+            // 更新密码分类方法
+            updatePasswordCategory(id, category) {
+                const index = this.passwords.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    this.passwords[index].category = category;
+                    this.savePasswords();
+
+                    // 更新UI
+                    document.getElementById('detailCategory').textContent = category;
+
+                    this.showNotification('成功', '分类已更新', 'success');
+                }
+            }
+
+            // 显示添加密码模态框
+            showPasswordModal() {
+                document.getElementById('modalTitle').textContent = '添加新密码';
+                document.getElementById('passwordId').value = '';
+                document.getElementById('siteName').value = '';
+                document.getElementById('siteUrl').value = '';
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                document.getElementById('notes').value = '';
+
+                document.getElementById('passwordModal').classList.add('active');
+            }
+
+            // 隐藏密码模态框
+            hideAddPasswordModal() {
+                document.getElementById('passwordModal').classList.remove('active');
+            }
+
+            // 保存密码
+            savePassword() {
+                const id = document.getElementById('passwordId').value;
+                const site = document.getElementById('siteName').value;
+                const siteUrl = document.getElementById('siteUrl').value;
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                const notes = document.getElementById('notes').value;
+
+                if (!site || !username || !password) {
+                    this.showNotification('错误', '请填写所有必填字段', 'error');
+                    return;
+                }
+
+                const now = new Date().toISOString();
+
+                if (id) {
+                    // 更新现有密码
+                    const index = this.passwords.findIndex(p => p.id === id);
+                    if (index !== -1) {
+                        this.passwords[index] = {
+                            ...this.passwords[index],
+                            site,
+                            siteUrl,
+                            username,
+                            password,
+                            notes,
+                            updatedAt: now
+                        };
+                    }
+                } else {
+                    // 添加新密码
+                    // 在密码对象中添加收藏状态和分类字段
+                    const newPassword = {
+                        id: Date.now().toString(),
+                        site,
+                        siteUrl,
+                        username,
+                        password,
+                        notes,
+                        createdAt: now,
+                        updatedAt: now,
+                        isFavorite: false, // 新增收藏状态字段
+                        category: '未分类' // 新增分类字段
+                    };
+
+                    this.passwords.push(newPassword);
+                }
+
+                // 保存到存储
+                this.savePasswords();
+
+                // 更新UI
+                this.renderPasswordList();
+
+                // 关闭模态框
+                this.hideAddPasswordModal();
+
+                this.showNotification('成功', id ? '密码已更新' : '密码已添加', 'success');
+            }
+
+            // 编辑密码
+            editPassword() {
+                if (!this.currentPasswordId) return;
+
+                const password = this.passwords.find(p => p.id === this.currentPasswordId);
+                if (!password) return;
+
+                document.getElementById('modalTitle').textContent = '编辑密码';
+                document.getElementById('passwordId').value = password.id;
+                document.getElementById('siteName').value = password.site;
+                document.getElementById('siteUrl').value = password.siteUrl || '';
+                document.getElementById('username').value = password.username;
+                document.getElementById('password').value = password.password;
+                document.getElementById('notes').value = password.notes || '';
+
+                document.getElementById('passwordModal').classList.add('active');
+            }
+
+            // 删除密码
+            deletePassword() {
+                if (!this.currentPasswordId) return;
+
+                if (confirm('确定要删除此密码吗？此操作无法撤销。')) {
+                    this.passwords = this.passwords.filter(p => p.id !== this.currentPasswordId);
+                    this.savePasswords();
+                    this.renderPasswordList();
+
+                    // 清除详情视图
+                    this.clearPasswordDetails();
+
+                    this.showNotification('成功', '密码已删除', 'success');
+                }
+            }
+
+            // 清除密码详情
+            clearPasswordDetails() {
+                this.currentPasswordId = null;
+
+                document.getElementById('detailTitle').textContent = '选择密码项';
+                document.getElementById('detailSite').textContent = '-';
+                document.getElementById('detailUsername').textContent = '-';
+                document.getElementById('detailPassword').textContent = '••••••••••••';
+                document.getElementById('detailNotes').textContent = '-';
+                document.getElementById('detailCreated').textContent = '-';
+                document.getElementById('detailUpdated').textContent = '-';
+                document.getElementById('detailStrength').textContent = '-';
+                document.getElementById('detailBreached').textContent = '-';
+                document.getElementById('detailReused').textContent = '-';
+
+                document.getElementById('editPasswordBtn').disabled = true;
+                document.getElementById('deletePasswordBtn').disabled = true;
+            }
+
+            // 切换密码可见性
+            togglePasswordVisibility() {
+                if (!this.currentPasswordId) return;
+
+                const password = this.passwords.find(p => p.id === this.currentPasswordId);
+                if (!password) return;
+
+                const passwordText = document.getElementById('detailPassword');
+                const revealBtn = document.getElementById('revealPasswordBtn');
+
+                if (passwordText.textContent === '••••••••••••') {
+                    passwordText.textContent = password.password;
+                    revealBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                } else {
+                    passwordText.textContent = '••••••••••••';
+                    revealBtn.innerHTML = '<i class="fas fa-eye"></i>';
+                }
+            }
+
+            // 复制密码到剪贴板
+            copyPasswordToClipboard() {
+                if (!this.currentPasswordId) return;
+
+                const password = this.passwords.find(p => p.id === this.currentPasswordId);
+                if (!password) return;
+
+                navigator.clipboard.writeText(password.password)
+                    .then(() => {
+                        const copyBtn = document.getElementById('copyPasswordBtn');
+                        copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+                        setTimeout(() => {
+                            copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+                        }, 2000);
+
+                        this.showNotification('成功', '密码已复制到剪贴板', 'success');
+                    })
+                    .catch(err => {
+                        this.showNotification('错误', '复制失败: ' + err, 'error');
+                    });
+            }
+
+
+
+            // 显示存储设置模态框
+            showStorageModal() {
+                this.selectStorageType(this.storageConfig.type);
+                document.getElementById('storageModal').classList.add('active');
+            }
+
+            // 隐藏存储设置模态框
+            hideStorageModal() {
+                document.getElementById('storageModal').classList.remove('active');
+            }
+
+            // 选择存储类型
+            selectStorageType(type) {
+                this.storageConfig.type = type;
+
+                // 重置所有按钮状态
+                document.querySelectorAll('.storage-type').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+
+                // 激活当前选择的按钮
+                document.querySelector(`.storage-type[data-type="${type}"]`).classList.add('active');
+
+                // 显示/隐藏配置区域
+                document.getElementById('githubConfig').style.display = type === 'github' ? 'block' : 'none';
+                document.getElementById('webdavConfig').style.display = type === 'webdav' ? 'block' : 'none';
+
+                // 填充现有配置
+                if (type === 'github') {
+                    document.getElementById('githubToken').value = this.storageConfig.github.token || '';
+                    document.getElementById('githubRepo').value = this.storageConfig.github.repo || '';
+                } else if (type === 'webdav') {
+                    document.getElementById('webdavUrl').value = this.storageConfig.webdav.url || '';
+                    document.getElementById('webdavUsername').value = this.storageConfig.webdav.username || '';
+                    document.getElementById('webdavPassword').value = this.storageConfig.webdav.password || '';
+                }
+            }
+
+            // 加载存储配置
+            loadStorageConfig() {
+                const config = localStorage.getItem('storageConfig');
+                if (config) {
+                    try {
+                        this.storageConfig = JSON.parse(config);
+                        this.updateStorageStatus();
+                    } catch (error) {
+                        console.error('加载存储配置失败:', error);
+                    }
+                }
+            }
+
+            // 保存存储配置
+            saveStorageConfig() {
+                if (this.storageConfig.type === 'github') {
+                    this.storageConfig.github = {
+                        token: document.getElementById('githubToken').value,
+                        repo: document.getElementById('githubRepo').value
+                    };
+                } else if (this.storageConfig.type === 'webdav') {
+                    this.storageConfig.webdav = {
+                        url: document.getElementById('webdavUrl').value,
+                        username: document.getElementById('webdavUsername').value,
+                        password: document.getElementById('webdavPassword').value
+                    };
+                }
+
+                localStorage.setItem('storageConfig', JSON.stringify(this.storageConfig));
+                this.updateStorageStatus();
+                this.hideStorageModal();
+
+                this.showNotification('成功', '存储配置已保存', 'success');
+            }
+
+            // 更新存储状态显示
+            updateStorageStatus() {
+                const statusElement = document.getElementById('storageStatus');
+
+                if (this.storageConfig.type === 'local') {
+                    statusElement.textContent = '使用本地存储';
+                } else if (this.storageConfig.type === 'github') {
+                    statusElement.textContent = '使用 GitHub 存储';
+                } else if (this.storageConfig.type === 'webdav') {
+                    statusElement.textContent = '使用 WebDAV 存储';
+                }
+            }
+            // 同步密码
+            async syncPasswords() {
+                if (this.storageConfig.type === 'local') {
+                    this.showNotification('信息', '本地存储无需同步', 'info');
+                    return;
+                }
+
+                this.showNotification('同步中', '正在同步密码数据...', 'info');
+
+                try {
+                    const vaultData = localStorage.getItem('vault');
+
+                    if (!vaultData) {
+                        this.showNotification('错误', '没有可同步的数据', 'error');
+                        return;
+                    }
+
+                    if (this.storageConfig.type === 'github') {
+                        await this.syncWithGitHub(vaultData);
+                    } else if (this.storageConfig.type === 'webdav') {
+                        await this.syncWithWebDAV(vaultData);
+                    }
+
+                    this.showNotification('成功', '密码数据已同步', 'success');
+                } catch (error) {
+                    console.error('同步失败:', error);
+                    this.showNotification('错误', `同步失败: ${error.message}`, 'error');
+                }
+            }
+
+            // 与GitHub同步
+            async syncWithGitHub(vaultData) {
+                const { token, repo } = this.storageConfig.github;
+
+                if (!token || !repo) {
+                    throw new Error('GitHub配置不完整');
+                }
+
+                // 提取仓库所有者和仓库名称
+                const [owner, repoName] = repo.split('/');
+                if (!owner || !repoName) {
+                    throw new Error('仓库名称格式不正确，应为 owner/repo');
+                }
+
+                // 检查文件是否存在
+                const filePath = 'vault.json';
+                const apiUrl = `https://api.github.com/repos/${owner}/${repoName}/contents/${filePath}`;
+
+                let sha = null;
+                try {
+                    const response = await fetch(apiUrl, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        const fileInfo = await response.json();
+                        sha = fileInfo.sha;
+                    }
+                } catch (error) {
+                    console.log('文件不存在或获取文件信息失败，将创建新文件');
+                }
+
+                // 准备上传数据
+                const content = btoa(unescape(encodeURIComponent(vaultData)));
+                let message = `Sync vault data at ${new Date().toISOString()}`;
+                if (this.commitMsg !== null) {
+                    message = this.commitMsg
+                }
+
+                const body = {
+                    message,
+                    content,
+                    sha: sha || undefined // 如果存在sha则更新，否则创建
+                };
+
+                // 上传文件
+                const uploadResponse = await fetch(apiUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (!uploadResponse.ok) {
+                    const errorData = await uploadResponse.json();
+                    throw new Error(`GitHub API错误: ${errorData.message}`);
+                }
+            }
+
+            // 与WebDAV同步
+            async syncWithWebDAV(vaultData) {
+                const { url, username, password } = this.storageConfig.webdav;
+
+                if (!url || !username || !password) {
+                    throw new Error('WebDAV配置不完整');
+                }
+
+                // 确保URL以斜杠结尾
+                const baseUrl = url.endsWith('/') ? url : `${url}/`;
+                const filePath = 'vault.json';
+                const fullUrl = `${baseUrl}${filePath}`;
+
+                // 创建认证头
+                const authHeader = 'Basic ' + btoa(`${username}:${password}`);
+
+                // 上传文件
+                const response = await fetch(fullUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': authHeader,
+                        'Content-Type': 'application/json'
+                    },
+                    body: vaultData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`WebDAV错误: ${response.status} ${response.statusText}`);
+                }
+            }
+
+
+            // 导入密码
+            importPasswords() {
+                // 创建文件输入元素
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = '.json,.txt';
+
+                fileInput.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        try {
+                            const data = JSON.parse(event.target.result);
+
+                            if (Array.isArray(data)) {
+                                // 合并导入的密码
+                                data.forEach(newPassword => {
+                                    const existingIndex = this.passwords.findIndex(p => p.id === newPassword.id);
+
+                                    if (existingIndex !== -1) {
+                                        // 更新现有密码
+                                        this.passwords[existingIndex] = {
+                                            ...this.passwords[existingIndex],
+                                            ...newPassword,
+                                            updatedAt: new Date().toISOString()
+                                        };
+                                    } else {
+                                        // 添加新密码
+                                        this.passwords.push({
+                                            ...newPassword,
+                                            id: Date.now().toString(),
+                                            createdAt: new Date().toISOString(),
+                                            updatedAt: new Date().toISOString()
+                                        });
+                                    }
+                                });
+
+                                this.savePasswords();
+                                this.renderPasswordList();
+                                this.showNotification('成功', '密码导入成功', 'success');
+                            } else {
+                                this.showNotification('错误', '导入文件格式不正确', 'error');
+                            }
+                        } catch (error) {
+                            this.showNotification('错误', '导入失败: ' + error.message, 'error');
+                        }
+                    };
+
+                    reader.readAsText(file);
+                };
+
+                fileInput.click();
+            }
+
+            // 导出密码
+            exportPasswords() {
+                if (this.passwords.length === 0) {
+                    this.showNotification('信息', '没有密码可导出', 'info');
+                    return;
+                }
+
+                // 创建导出数据
+                const exportData = JSON.stringify(this.passwords, null, 2);
+                const blob = new Blob([exportData], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+
+                // 创建下载链接
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `passwords_export_${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+
+                // 清理
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+
+                this.showNotification('成功', '密码导出成功', 'success');
+            }
+
+            // 过滤密码
+            filterPasswords() {
+                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+                if (!searchTerm) {
+                    this.renderPasswordList();
+                    return;
+                }
+
+                const filtered = this.passwords.filter(password => {
+                    return (
+                        password.site.toLowerCase().includes(searchTerm) ||
+                        password.username.toLowerCase().includes(searchTerm) ||
+                        (password.notes && password.notes.toLowerCase().includes(searchTerm))
+                    );
+                });
+
+                const container = document.getElementById('passwordItems');
+                const countElement = document.getElementById('passwordCount');
+
+                // 清空容器
+                container.innerHTML = '';
+
+                // 更新计数
+                countElement.textContent = filtered.length;
+
+                // 添加过滤后的密码项
+                filtered.forEach(password => {
+                    const item = document.createElement('div');
+                    item.className = 'password-item';
+                    item.dataset.id = password.id;
+
+                    item.innerHTML = `
+                        <div class="favicon">
+                            <i class="${password.icon || 'fas fa-key'}"></i>
+                        </div>
+                        <div class="item-info">
+                            <h3>${password.site}</h3>
+                            <p>${password.username}</p>
+                        </div>
+                    `;
+
+                    item.addEventListener('click', () => {
+                        this.showPasswordDetails(password.id);
+                    });
+
+                    container.appendChild(item);
+                });
+            }
+            // 显示安全审计模态框
+            showSecurityAuditModal() {
+                // 执行安全审计
+                this.performSecurityAudit();
+
+                document.getElementById('securityAuditModal').classList.add('active');
+            }
+
+            // 隐藏安全审计模态框
+            hideSecurityAuditModal() {
+                document.getElementById('securityAuditModal').classList.remove('active');
+                document.getElementById('auditModal').classList.remove('active');
+
+            }
+
+            // 执行安全审计
+            performSecurityAudit() {
+                // 这里实现安全审计逻辑
+                // 实际应用中应检查密码强度、泄露情况等
+
+                // 示例结果
+                document.getElementById('auditStrength').textContent = '良好';
+                document.getElementById('auditBreached').textContent = '安全';
+                document.getElementById('auditReused').textContent = '2个重复';
+            }
+
+
+            // 隐藏偏好设置模态框
+            hidePreferencesModal() {
+                document.getElementById('preferencesModal').classList.remove('active');
+            }
+
+
+            // 应用偏好设置
+            applyPreferences() {
+                const preferences = JSON.parse(localStorage.getItem('preferences') || '{}');
+
+                // 应用深色/浅色模式
+                if (preferences.darkMode === false) {
+                    document.documentElement.style.setProperty('--dark', '#ffffff');
+                    document.documentElement.style.setProperty('--dark-light', '#f5f5f5');
+                    document.documentElement.style.setProperty('--text', '#333333');
+                } else {
+                    document.documentElement.style.setProperty('--dark', '#121212');
+                    document.documentElement.style.setProperty('--dark-light', '#1e1e1e');
+                    document.documentElement.style.setProperty('--text', '#e0e0e0');
+                }
+            }
+
+            // 生成密码功能
+            generatePassword() {
+                const length = parseInt(document.getElementById('passwordLength').value);
+                const uppercase = document.getElementById('uppercase').checked;
+                const lowercase = document.getElementById('lowercase').checked;
+                const numbers = document.getElementById('numbers').checked;
+                const symbols = document.getElementById('symbols').checked;
+
+                let charset = '';
+                if (lowercase) charset += 'abcdefghijklmnopqrstuvwxyz';
+                if (uppercase) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                if (numbers) charset += '0123456789';
+                if (symbols) charset += '!@#$%^&*()_+-=[]{}|;:,.<>?';
+
+                if (!charset) {
+                    this.showNotification('错误', '请至少选择一种字符类型', 'error');
+                    return;
+                }
+
+                let password = '';
+                for (let i = 0; i < length; i++) {
+                    const randomIndex = Math.floor(Math.random() * charset.length);
+                    password += charset[randomIndex];
+                }
+                // 将生成的密码显示在输入框中
+                document.getElementById('password').value = password;
+                document.getElementById('password').type = 'text';
+
+
+            }
+
+
+
+
+            // 生成随机密码
+            genPassword() {
+                const length = parseInt(document.getElementById('genPasswordLength').value);
+                const uppercase = document.getElementById('genUppercase').checked;
+                const lowercase = document.getElementById('genLowercase').checked;
+                const numbers = document.getElementById('genNumbers').checked;
+                const symbols = document.getElementById('genSymbols').checked;
+
+                let charset = '';
+                if (lowercase) charset += 'abcdefghijklmnopqrstuvwxyz';
+                if (uppercase) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                if (numbers) charset += '0123456789';
+                if (symbols) charset += '!@#$%^&*()_+-=[]{}|;:,.<>?';
+
+                if (!charset) {
+                    document.getElementById('generatedPassword').value = '请至少选择一种字符类型';
+                    return;
+                }
+
+                let password = '';
+                for (let i = 0; i < length; i++) {
+                    const randomIndex = Math.floor(Math.random() * charset.length);
+                    password += charset[randomIndex];
+                }
+
+                document.getElementById('generatedPassword').value = password;
+                this.calculatePasswordStrength(password);
+            }
+
+            // 更新密码强度显示
+            calculatePasswordStrength(password) {
+                let strength = 1;
+                let hasUpper = /[A-Z]/.test(password);
+                let hasLower = /[a-z]/.test(password);
+                let hasDigit = /[0-9]/.test(password);
+                let hasSymbol = /[^A-Za-z0-9]/.test(password);
+                let length = password.length;
+
+                // 长度评分
+                if (length > 10) strength += 2;
+                else if (length > 7) strength += 1;
+
+                // 字符种类评分
+                if (hasUpper) strength += 1;
+                if (hasLower) strength += 1;
+                if (hasDigit) strength += 1;
+                if (hasSymbol) strength += 1;
+
+                // 重置强度条
+                const bars = document.querySelectorAll('.strength-bar');
+                bars.forEach(bar => {
+                    bar.className = 'strength-bar';
+                });
+                const strengthText = document.getElementById('passwordStrengthText');
+
+                // 根据分数设置强度
+                if (strength <= 2) {
+                    // 弱
+                    bars[0].classList.add('weak');
+                    strengthText.textContent = '弱';
+                    strengthText.style.color = 'var(--danger)';
+                } else if (strength <= 4) {
+                    // 中等
+                    bars[0].classList.add('moderate');
+                    bars[1].classList.add('moderate');
+                    strengthText.textContent = '中等';
+                    strengthText.style.color = 'var(--warning)';
+                } else if (strength <= 6) {
+                    // 强
+                    bars[0].classList.add('strong');
+                    bars[1].classList.add('strong');
+                    bars[2].classList.add('strong');
+                    strengthText.textContent = '强';
+                    strengthText.style.color = 'var(--secondary)';
+                } else {
+                    // 非常强
+                    bars[0].classList.add('very-strong');
+                    bars[1].classList.add('very-strong');
+                    bars[2].classList.add('very-strong');
+                    bars[3].classList.add('very-strong');
+                    strengthText.textContent = '非常强';
+                    strengthText.style.color = 'var(--primary)';
+                }
+
+                // 根据分数返回结果
+                if (strength <= 2) {
+                    return { text: '弱', color: 'var(--danger)' };
+                } else if (strength <= 4) {
+                    return { text: '中等', color: 'var(--warning)' };
+                } else if (strength <= 6) {
+                    return { text: '强', color: 'var(--secondary)' };
+                } else {
+                    return { text: '非常强', color: 'var(--primary)' };
+                }
+            }
+            // 检查密码重复使用
+            checkPasswordReuse(password) {
+                return this.passwords.filter(p => p.password === password).length;
+            }
+            // 复制生成的密码
+            copyGeneratedPassword() {
+                const password = document.getElementById('generatedPassword').value;
+                if (!password) return;
+
+                navigator.clipboard.writeText(password)
+                    .then(() => {
+                        this.showNotification('成功', '密码已复制到剪贴板', 'success');
+                    })
+                    .catch(err => {
+                        this.showNotification('错误', '复制失败: ' + err, 'error');
+                    });
+            }
+
+
+            // 显示安全审计模态框
+            showAuditModal() {
+                document.getElementById('auditModal').classList.add('active');
+            }
+
+            // 运行安全审计
+            runSecurityAudit() {
+                // 实际审计逻辑
+                let weakCount = 0;
+                let reusedCount = 0;
+                let expiredCount = 0;
+                let breachedCount = 0;
+
+                // 分析密码数据
+                this.passwords.forEach(password => {
+                    // 弱密码检测（长度小于8）
+                    if (password.password.length < 8) weakCount++;
+
+                    // 重复密码检测
+                    const samePassword = this.passwords.filter(p =>
+                        p.password === password.password && p.id !== password.id
+                    );
+                    if (samePassword.length > 0) reusedCount++;
+
+                    // 过期密码检测（超过1年未修改）
+                    const updatedDate = new Date(password.updatedAt);
+                    const oneYearAgo = new Date();
+                    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+                    if (updatedDate < oneYearAgo) expiredCount++;
+
+                    // 泄露风险检测（简化的模拟）
+                    if (this.checkPasswordBreach(password.password)) breachedCount++;
+                });
+
+                // 更新UI
+                document.getElementById('weakPasswordsCount').textContent =
+                    `${weakCount} 个弱密码`;
+                document.getElementById('reusedPasswordsCount').textContent =
+                    `${reusedCount} 个重复使用的密码`;
+                document.getElementById('expiredPasswordsCount').textContent =
+                    `${expiredCount} 个过期密码`;
+                document.getElementById('breachedPasswordsCount').textContent =
+                    `${breachedCount} 个可能泄露的密码`;
+            }
+
+            // 检查密码是否泄露（模拟）
+            checkPasswordBreach(password) {
+                // 在实际应用中应调用Have I Been Pwned API
+                // 这里简化处理，只检查常见弱密码
+                const weakPasswords = [
+                    'password', '123456', '12345678', '123456789', 'qwerty',
+                    'abc123', 'password1', '12345', '1234567', 'admin'
+                ];
+                return weakPasswords.includes(password.toLowerCase());
+            }
+
+
+            // 显示偏好设置模态框
+            showPreferencesModal() {
+                document.getElementById('preferencesModal').classList.add('active');
+            }
+
+            // 加载偏好设置
+            loadPreferences() {
+
+                // 设置UI元素
+                if (preferences.autoLockTime) {
+                    document.getElementById('autoLockTime').value = preferences.autoLockTime;
+                }
+                if (preferences.backupFrequency) {
+                    document.getElementById('backupFrequency').value = preferences.backupFrequency;
+                }
+                if (preferences.themePreference) {
+                    document.getElementById('themePreference').value = preferences.themePreference;
+                }
+                if (preferences.defaultUppercase !== undefined) {
+                    document.getElementById('defaultUppercase').checked = preferences.defaultUppercase;
+                }
+                if (preferences.defaultLowercase !== undefined) {
+                    document.getElementById('defaultLowercase').checked = preferences.defaultLowercase;
+                }
+                if (preferences.defaultNumbers !== undefined) {
+                    document.getElementById('defaultNumbers').checked = preferences.defaultNumbers;
+                }
+                if (preferences.defaultSymbols !== undefined) {
+                    document.getElementById('defaultSymbols').checked = preferences.defaultSymbols;
+                }
+            }
+
+            // 保存偏好设置
+            savePreferences() {
+                const preferences = {
+                    autoLockTime: document.getElementById('autoLockTime').value,
+                    backupFrequency: document.getElementById('backupFrequency').value,
+                    themePreference: document.getElementById('themePreference').value,
+                    defaultUppercase: document.getElementById('defaultUppercase').checked,
+                    defaultLowercase: document.getElementById('defaultLowercase').checked,
+                    defaultNumbers: document.getElementById('defaultNumbers').checked,
+                    defaultSymbols: document.getElementById('defaultSymbols').checked
+                };
+
+                localStorage.setItem('preferences', JSON.stringify(preferences));
+                this.showNotification('成功', '偏好设置已保存', 'success');
+                this.hidePreferencesModal();
+            }
+            // 显示通知
+            showNotification(title, message, type = 'info') {
+                const notification = document.getElementById('notification');
+                const notificationTitle = document.getElementById('notificationTitle');
+                const notificationMessage = document.getElementById('notificationMessage');
+
+                // 更新通知内容
+                notificationTitle.textContent = title;
+                notificationMessage.textContent = message;
+
+                // 更新通知类型
+                notification.className = 'notification';
+                notification.classList.add(type);
+                notification.classList.add('show');
+
+                // 自动隐藏通知
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 5000);
+            }
+
+
+            // 在PasswordManager类中添加方法
+            exportConfig() {
+                // 收集配置信息（排除密码数据）
+                const config = {
+                    storageConfig: this.storageConfig,
+                    preferences: this.preferences,
+                    sidebarCollapsed: this.sidebarCollapsed,
+                    favorites: this.favorites,
+                    recentPasswords: this.recentPasswords,
+                    version: "1.0"
+                };
+
+                // 转换为JSON字符串
+                const json = JSON.stringify(config, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+
+                // 创建下载链接
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'securepass_config.json';
+                document.body.appendChild(a);
+                a.click();
+
+                // 清理
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 0);
+
+                this.showNotification('成功', '配置已导出', 'success');
+            }
+
+
+        }
+
+        // 初始化密码管理器
+        document.addEventListener('DOMContentLoaded', () => {
+            const passwordManager = new PasswordManager();
+        });
+    </script>
+</body>
+
+</html>
