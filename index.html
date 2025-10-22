@@ -4,6 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="apple-touch-icon-precomposed" sizes="120x120" href="./img/fa-lock.svg">
+    <link rel="icon" href="./img/fa-lock.svg" type="image/x-icon" />
+    <link rel="shortcut icon" href="./img/fa-lock.svg" type="image/x-icon" />
     <title>SecurePass - 密码管理器</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -1106,6 +1109,18 @@
             background-color: var(--primary);
         }
 
+        /* 新增样式 */
+        .url-link {
+            color: var(--primary);
+            text-decoration: none;
+            cursor: pointer;
+            word-break: break-all;
+        }
+
+        .url-link:hover {
+            text-decoration: underline;
+        }
+
         /* 分类选择器样式 */
         .category-selector {
             display: flex;
@@ -1124,6 +1139,43 @@
 
         .category-selector button {
             width: auto;
+        }
+
+        /* 添加主仓库选择样式 */
+        .primary-repo-select {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 5px 0;
+            border-bottom: 1px dashed var(--light-gray);
+        }
+
+        .primary-repo-select label {
+            font-weight: 500;
+            color: var(--primary);
+            cursor: pointer;
+        }
+
+        .primary-repo-select input[type="radio"] {
+            margin: 0;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            vertical-align: middle;
+        }
+
+        .version-repo-info {
+            padding: 10px 15px;
+            background-color: var(--dark-light);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .version-repo-info h3 {
+            font-size: 16px;
+            color: var(--primary);
+            margin: 0;
         }
     </style>
 
@@ -1214,10 +1266,15 @@
                     <i class="fas fa-cloud"></i>
                     <span>存储设置</span>
                 </div>
+                <div class="nav-item" id="importConfigBtn">
+                    <i class="fas fa-file-import"></i>
+                    <span>导入配置</span>
+                </div>
                 <div class="nav-item" id="exportConfigBtn">
                     <i class="fas fa-file-export"></i>
                     <span>导出配置</span>
                 </div>
+
             </div>
 
             <div class="storage-config">
@@ -1286,7 +1343,9 @@
                             <h3>账户信息</h3>
                             <div class="info-row">
                                 <div class="info-label">网站/应用</div>
-                                <div class="info-value" id="detailSite">-</div>
+                                <div class="info-value">
+                                    <a href="#" id="detailUrl" class="url-link" target="_blank">-</a>
+                                </div>
                             </div>
                             <div class="info-row">
                                 <div class="info-label">用户名</div>
@@ -1384,7 +1443,28 @@
             </div>
         </div>
     </div>
+    <!-- 添加导入配置模态框 -->
+    <div class="modal" id="importConfigModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>导入配置</h2>
+                <button class="close-modal">&times;</button>
+            </div>
 
+            <div class="form-group">
+                <label for="configFile">选择配置文件</label>
+                <input type="file" id="configFile" accept=".json" style="width: 100%; padding: 10px;">
+                <p style="font-size: 14px; color: var(--text-secondary); margin-top: 10px;">
+                    选择之前导出的SecurePass配置文件(.json格式)
+                </p>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelImportBtn">取消</button>
+                <button type="button" class="btn" id="confirmImportBtn">导入配置</button>
+            </div>
+        </div>
+    </div>
     <!-- 添加/编辑密码模态框 -->
     <div class="modal" id="passwordModal">
         <div class="modal-content">
@@ -1458,7 +1538,7 @@
         </div>
     </div>
 
-    <!-- 存储设置模态框 -->
+    <!-- 修改存储设置模态框，支持多个仓库 -->
     <div class="modal" id="storageModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1471,10 +1551,12 @@
                 <div style="display: flex; gap: 10px; margin-top: 10px;">
                     <button type="button" class="btn btn-outline storage-type" data-type="local">本地存储</button>
                     <button type="button" class="btn btn-outline storage-type" data-type="github">GitHub</button>
+                    <button type="button" class="btn btn-outline storage-type" data-type="multi-git">多点存储</button>
                     <button type="button" class="btn btn-outline storage-type" data-type="webdav">WebDAV</button>
                 </div>
             </div>
 
+            <!-- 单个GitHub仓库配置 -->
             <div id="githubConfig" style="display: none;">
                 <div class="form-group">
                     <label for="githubToken">GitHub 访问令牌</label>
@@ -1487,6 +1569,22 @@
                 </div>
             </div>
 
+            <!-- 多个GitHub仓库配置 -->
+            <div id="multiGithubConfig" style="display: none;">
+                <div class="form-group">
+                    <label>Git 仓库列表</label>
+                    <p style="font-size: 10px; color: var(--text-secondary); margin-bottom: 15px;">
+                        <i class="fas fa-info-circle"></i>
+                        请选择其中一个仓库作为主仓库（用于历史版本和自动同步）
+                    </p>
+                    <div id="gitReposList" style="margin-top: 10px;">
+                        <!-- 仓库配置将通过JS动态添加 -->
+                    </div>
+                    <button type="button" class="btn btn-outline" id="addGithubRepoBtn" style="margin-top: 10px;">
+                        <i class="fas fa-plus"></i> 添加仓库
+                    </button>
+                </div>
+            </div>
             <div id="webdavConfig" style="display: none;">
                 <div class="form-group">
                     <label for="webdavUrl">WebDAV URL</label>
@@ -1503,13 +1601,64 @@
                     <input type="password" id="webdavPassword" placeholder="输入密码">
                 </div>
             </div>
-
             <div class="form-actions">
                 <button type="button" class="btn btn-secondary" id="cancelStorageBtn">取消</button>
                 <button type="button" class="btn" id="saveStorageBtn">保存配置</button>
             </div>
         </div>
     </div>
+
+    <!-- 修改GitHub仓库配置项模板 -->
+    <template id="gitRepoItemTemplate">
+        <div class="git-repo-item"
+            style="border: 1px solid var(--light-gray); border-radius: 6px; padding: 15px; margin-bottom: 15px; position: relative;">
+
+            <button type="button" class="remove-repo-btn"
+                style="position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--danger); cursor: pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+            <!-- 主仓库选择按钮 - 移动到仓库名称上方 -->
+            <div class="primary-repo-select" style="display: flex; align-items: center; margin-bottom: 10px;">
+                <input type="radio" name="primaryRepo" class="primary-repo-radio" style="margin-right: 8px;">
+                <label style="font-weight: 500; color: var(--primary);">主仓库</label>
+            </div>
+            <div class="form-group">
+                <label>仓库名称</label>
+                <input type="text" class="repo-name" placeholder="仓库描述（例如：主仓库）" style="margin-bottom: 10px;">
+            </div>
+
+            <!-- 新增仓库类型选择 -->
+            <div class="form-group">
+                <label>仓库类型</label>
+                <select class="repo-type"
+                    style="width: 100%; padding: 10px; background-color: var(--dark); border: 1px solid var(--light-gray); border-radius: 6px; color: var(--text);">
+                    <option value="github">GitHub</option>
+                    <option value="gitee">Gitee</option>
+                    <option value="gitea">Gitea</option>
+                    <option value="gitlab">GitLab</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>访问令牌</label>
+                <input type="password" class="repo-token" placeholder="输入访问令牌">
+            </div>
+
+            <div class="form-group">
+                <label>仓库路径</label>
+                <input type="text" class="repo-path" placeholder="用户名/仓库名">
+            </div>
+
+            <!-- Gitea需要额外配置服务器地址 -->
+            <div class="form-group gitea-server" style="display: none;">
+                <label>Gitea 服务器地址</label>
+                <input type="url" class="gitea-url" placeholder="https://gitea.example.com">
+            </div>
+            <button type="button" class="btn btn-danger remove-repo-btn" style="width: auto; padding: 5px 10px;">
+                <i class="fas fa-trash"></i> 移除
+            </button>
+        </div>
+    </template>
 
     <!-- 历史版本模态框 -->
     <div class="modal" id="versionsModal">
@@ -1643,7 +1792,7 @@
     <div class="modal" id="syncModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>同步到GitHub</h2>
+                <h2>同步到Git仓库</h2>
                 <button class="close-modal">&times;</button>
             </div>
 
@@ -1772,7 +1921,16 @@
                     </label>
                 </div>
             </div>
-
+            <!-- 新增自动同步选项 -->
+            <div class="form-group">
+                <label for="autoSyncOnOpen">开启保险箱时自动同步</label>
+                <div style="display: flex; align-items: center; margin-top: 10px;">
+                    <input type="checkbox" id="autoSyncOnOpen">
+                    <label for="autoSyncOnOpen" style="margin-left: 10px;">
+                        启用后，每次打开保险箱会自动从服务器获取最新密码数据
+                    </label>
+                </div>
+            </div>
             <div class="form-actions">
                 <button type="button" class="btn" id="savePreferencesBtn">保存设置</button>
                 <button type="button" class="btn btn-secondary" id="cancelPreferencesBtn">取消</button>
@@ -1819,8 +1977,25 @@
                 // 加载保存的设置
                 this.loadPreferences();
                 this.setupModalCloseHandlers();
+                // 清理无效的收藏和最近访问记录
+                this.cleanupInvalidReferences();
             }
+            // 清理无效的引用
+            cleanupInvalidReferences() {
+                // 清理无效的收藏记录
+                this.favorites = this.favorites.filter(id =>
+                    this.passwords.some(p => p.id === id)
+                );
 
+                // 清理无效的最近访问记录
+                this.recentPasswords = this.recentPasswords.filter(id =>
+                    this.passwords.some(p => p.id === id)
+                );
+
+                // 保存清理后的数据
+                localStorage.setItem('favorites', JSON.stringify(this.favorites));
+                localStorage.setItem('recentPasswords', JSON.stringify(this.recentPasswords));
+            }
             // 在PasswordManager类中添加方法
             setupModalCloseHandlers() {
                 document.querySelectorAll('.modal').forEach(modal => {
@@ -1846,7 +2021,7 @@
 
                 // 同步按钮事件
                 document.getElementById('syncBtn').addEventListener('click', () => {
-                    if (this.storageConfig.type === 'github') {
+                    if (this.storageConfig.type === 'github' || this.storageConfig.type === 'multi-git') {
                         this.showSyncModal();
                     } else {
                         this.syncPasswords();
@@ -1907,6 +2082,7 @@
                         this.hideGeneratePasswordModal();
                         this.hideSecurityAuditModal();
                         this.hideSyncModal();
+                        this.hideImportModal();
                     });
                 });
 
@@ -2093,6 +2269,29 @@
                     this.updatePasswordCategory(this.currentPasswordId, newCategory);
                 });
 
+                // 在setupEventListeners中添加事件监听
+                document.getElementById('importConfigBtn').addEventListener('click', () => {
+                    this.showImportModal();
+                });
+
+                document.getElementById('confirmImportBtn').addEventListener('click', () => {
+                    this.importConfig();
+                });
+                document.getElementById('cancelImportBtn').addEventListener('click', () => {
+                    this.hideImportModal();
+                });
+                // 添加GitHub仓库按钮
+                document.getElementById('addGithubRepoBtn').addEventListener('click', () => {
+                    this.addGitRepo();
+                });
+                // 存储类型选择
+                document.querySelectorAll('.storage-type').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const type = btn.dataset.type;
+                        this.selectStorageType(type);
+                    });
+                });
+
             }
             // 添加显示生成密码模态框的方法
             showGeneratePasswordModal() {
@@ -2130,41 +2329,194 @@
                 document.getElementById('syncModal').classList.remove('active');
             }
 
+            // 隐藏配置导入模态框
+            hideImportModal() {
+                document.getElementById('importConfigModal').classList.remove('active');
+
+            }
+            // 显示配置导入模态框
+            showImportModal() {
+                document.getElementById('importConfigModal').classList.add('active');
+            }
 
             // 显示历史版本模态框
             showVersionsModal() {
-                if (this.storageConfig.type !== 'github') {
-                    this.showNotification('信息', '历史版本功能仅支持GitHub存储', 'info');
+                if (this.storageConfig.type !== 'github' && this.storageConfig.type !== 'multi-git') {
+                    this.showNotification('信息', '历史版本功能仅支持Git存储', 'info');
+                    return;
+                }
+                if (this.storageConfig.type === 'github') {
+
+                    this.fetchGitHubVersions();
+                }
+
+
+
+                if (this.storageConfig.type === 'multi-git' && this.storageConfig.gitRepos?.length > 0) {
+                    const primaryRepo = this.getPrimaryRepo();
+                    if (!primaryRepo) {
+                        this.showNotification('错误', '未配置多点存储仓库', 'error');
+                        return;
+                    }
+                    this.fetchGitVersions(primaryRepo)
+                }
+                document.getElementById('versionsModal').classList.add('active');
+            }
+            // 从主仓库拉取数据
+            async pullFromPrimaryRepo() {
+                const primaryRepo = this.getPrimaryRepo();
+
+                if (!primaryRepo) {
+                    this.showNotification('错误', '未配置多点存储仓库', 'error');
                     return;
                 }
 
-                this.fetchGitHubVersions();
-                document.getElementById('versionsModal').classList.add('active');
+                this.showNotification('信息', '正在从主仓库获取最新数据...', 'info');
+
+                try {
+                    const { type, token, repo, serverUrl } = primaryRepo;
+                    const [owner, repoName] = repo.split('/');
+
+                    if (!token || !owner || !repoName) {
+                        throw new Error('仓库配置不完整');
+                    }
+
+                    // 根据仓库类型确定API地址
+                    let apiUrl;
+                    switch (type) {
+                        case 'github':
+                            apiUrl = `https://api.github.com/repos/${owner}/${repoName}/contents/vault.json`;
+                            break;
+                        case 'gitee':
+                            apiUrl = `https://gitee.com/api/v5/repos/${owner}/${repoName}/contents/vault.json`;
+                            break;
+                        case 'gitea':
+                            if (!serverUrl) throw new Error('未配置Gitea服务器地址');
+                            apiUrl = `${serverUrl}/api/v1/repos/${owner}/${repoName}/contents/vault.json`;
+                            break;
+                        case 'gitlab':
+                            apiUrl = `https://gitlab.com/api/v4/projects/${encodeURIComponent(`${owner}/${repoName}`)}/repository/files/vault.json`;
+                            break;
+                        default:
+                            throw new Error('不支持的仓库类型');
+                    }
+
+                    const headers = {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    };
+
+                    const response = await fetch(apiUrl, { headers });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`API错误: ${errorData.message || errorData.error}`);
+                    }
+
+                    const fileData = await response.json();
+                    let content;
+
+                    // 不同平台的内容字段不同
+                    if (type === 'github' || type === 'gitea') {
+                        content = atob(fileData.content.replace(/\s/g, ''));
+                    } else if (type === 'gitee') {
+                        content = atob(fileData.content);
+                    } else if (type === 'gitlab') {
+                        content = atob(fileData.content);
+                    }
+
+                    // 保存到本地存储
+                    localStorage.setItem('vault', content);
+
+                    // 重新加载密码
+                    this.loadPasswords();
+
+                    this.showNotification('成功', '已从主仓库获取最新数据', 'success');
+                } catch (error) {
+                    this.showNotification('错误', `获取数据失败: ${error.message}`, 'error');
+                }
+            }
+            // 从主仓库获取历史版本
+            async fetchGitVersions(repoConfig) {
+                const { type, token, repo, serverUrl } = repoConfig;
+                const [owner, repoName] = repo.split('/');
+
+                if (!token || !owner || !repoName) {
+                    this.showNotification('错误', '仓库配置不完整', 'error');
+                    return;
+                }
+
+                // 显示加载指示器
+                document.getElementById('versionsLoading').style.display = 'block';
+                document.getElementById('versionList').innerHTML = '';
+                const filePath = 'vault.json';
+
+                try {
+                    // 根据仓库类型确定API地址
+                    let apiUrl;
+                    switch (type) {
+                        case 'github':
+                            apiUrl = `https://api.github.com/repos/${owner}/${repoName}/commits?path=${filePath}&per_page=10`;
+                            break;
+                        case 'gitee':
+                            apiUrl = `https://gitee.com/api/v5/repos/${owner}/${repoName}/commits?path=${filePath}&per_page=10`;
+                            break;
+                        case 'gitea':
+                            if (!serverUrl) throw new Error('未配置Gitea服务器地址');
+                            apiUrl = `${serverUrl}/api/v1/repos/${owner}/${repoName}/commits?path=${filePath}&limit=10`;
+                            break;
+                        case 'gitlab':
+                            apiUrl = `https://gitlab.com/api/v4/projects/${encodeURIComponent(`${owner}/${repoName}`)}/repository/commits?path=${filePath}&per_page=10`;
+                            break;
+                        default:
+                            throw new Error('不支持的仓库类型');
+                    }
+
+                    const headers = {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    };
+
+                    const response = await fetch(apiUrl, { headers });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`API错误: ${errorData.message || errorData.error}`);
+                    }
+
+                    const commits = await response.json();
+                    this.renderVersionList(commits);
+                } catch (error) {
+                    this.showNotification('错误', `获取历史版本失败: ${error.message}`, 'error');
+                } finally {
+                    document.getElementById('versionsLoading').style.display = 'none';
+                }
             }
             // 修改收藏功能
             toggleFavorite() {
                 if (!this.currentPasswordId) return;
 
-                const index = this.passwords.findIndex(p => p.id === this.currentPasswordId);
-                if (index === -1) return;
-
-                this.passwords[index].isFavorite = !this.passwords[index].isFavorite;
-                this.savePasswords();
-
-                // 更新UI
+                const index = this.favorites.indexOf(this.currentPasswordId);
                 const favoriteBtn = document.getElementById('toggleFavoriteBtn');
-                if (this.passwords[index].isFavorite) {
+
+                if (index === -1) {
+                    // 添加到收藏
+                    this.favorites.push(this.currentPasswordId);
                     favoriteBtn.innerHTML = '<i class="fas fa-star"></i> 已收藏';
-                    favoriteBtn.classList.add('favorited');
                     this.showNotification('成功', '已添加到收藏夹', 'success');
                 } else {
+                    // 从收藏中移除
+                    this.favorites.splice(index, 1);
                     favoriteBtn.innerHTML = '<i class="far fa-star"></i> 添加到收藏夹';
-                    favoriteBtn.classList.remove('favorited');
                     this.showNotification('成功', '已从收藏夹移除', 'success');
                 }
 
+                // 保存收藏状态
+                localStorage.setItem('favorites', JSON.stringify(this.favorites));
+
                 // 如果当前在收藏视图，刷新列表
-                if (document.querySelector('.nav-item.active').dataset.view === 'favorites') {
+                const activeView = document.querySelector('.nav-item.active').dataset.view;
+                if (activeView === 'favorites') {
                     this.filterPasswordsByView('favorites');
                 }
             }
@@ -2180,14 +2532,15 @@
                 // 添加到最近访问列表开头
                 this.recentPasswords.unshift(passwordId);
 
-                // 限制最近访问数量
+                // 限制最近访问数量（最多10个）
                 if (this.recentPasswords.length > 10) {
-                    this.recentPasswords.pop();
+                    this.recentPasswords = this.recentPasswords.slice(0, 10);
                 }
 
                 // 保存到本地存储
                 localStorage.setItem('recentPasswords', JSON.stringify(this.recentPasswords));
             }
+
 
             // 根据视图过滤密码
             filterPasswordsByView(view) {
@@ -2198,13 +2551,16 @@
                         filteredPasswords = this.passwords;
                         break;
                     case 'favorites':
-                        filteredPasswords = this.passwords.filter(p => this.favorites.includes(p.id));
+                        // 确保只显示存在的密码项
+                        filteredPasswords = this.passwords.filter(p =>
+                            this.favorites.includes(p.id) && p !== undefined
+                        );
                         break;
                     case 'recent':
-                        // 获取最近访问的密码项
-                        filteredPasswords = this.recentPasswords.map(id =>
-                            this.passwords.find(p => p.id === id)
-                        ).filter(p => p); // 过滤掉可能不存在的项
+                        // 确保只显示存在的密码项，并保持最近访问顺序
+                        filteredPasswords = this.recentPasswords
+                            .map(id => this.passwords.find(p => p.id === id))
+                            .filter(p => p !== undefined);
                         break;
                 }
 
@@ -2215,6 +2571,7 @@
             renderPasswordList(passwords = this.passwords) {
                 const container = document.getElementById('passwordItems');
                 const countElement = document.getElementById('passwordCount');
+                console.log(passwords.length);
 
                 // 清空容器
                 container.innerHTML = '';
@@ -2224,6 +2581,8 @@
 
                 // 添加密码项
                 passwords.forEach(password => {
+                    if (!password) return; // 跳过undefined项
+
                     const item = document.createElement('div');
                     item.className = 'password-item';
                     if (password.id === this.currentPasswordId) {
@@ -2236,17 +2595,17 @@
                     const isRecent = this.recentPasswords.includes(password.id);
 
                     item.innerHTML = `
-                        <div class="favicon">
-                            <i class="${password.icon || 'fas fa-key'}"></i>
-                        </div>
-                        <div class="item-info">
-                            <h3>${password.site} 
-                                ${isFavorite ? '<i class="fas fa-star favorite-star"></i>' : ''}
-                                ${isRecent ? '<span class="recent-indicator">最近</span>' : ''}
-                            </h3>
-                            <p>${password.username}</p>
-                        </div>
-                    `;
+            <div class="favicon">
+                <i class="${password.icon || 'fas fa-key'}"></i>
+            </div>
+            <div class="item-info">
+                <h3>${password.site} 
+                    ${isFavorite ? '<i class="fas fa-star favorite-star" style="color: var(--warning);"></i>' : ''}
+                    ${isRecent ? '<span class="recent-indicator" style="color: var(--secondary); font-size: 12px;">最近</span>' : ''}
+                </h3>
+                <p>${password.username}</p>
+            </div>
+        `;
 
                     item.addEventListener('click', () => {
                         this.showPasswordDetails(password.id);
@@ -2266,7 +2625,21 @@
             hideGeneratePasswordModal() {
                 document.getElementById('generatePasswordModal').classList.remove('active');
             }
+            // 获取主仓库
+            getPrimaryRepo() {
+                if (!this.storageConfig.gitRepos || this.storageConfig.gitRepos.length === 0) {
+                    return null;
+                }
 
+                // 查找标记为主仓库的仓库
+                const primaryRepo = this.storageConfig.gitRepos.find(repo => repo.isPrimary);
+                if (primaryRepo) {
+                    return primaryRepo;
+                }
+
+                // 如果没有标记的主仓库，返回第一个仓库
+                return this.storageConfig.gitRepos[0];
+            }
             // 获取GitHub历史版本
             async fetchGitHubVersions() {
                 // 显示loading
@@ -2319,6 +2692,16 @@
                     container.innerHTML = '<p>没有找到历史版本</p>';
                     return;
                 }
+                if (this.storageConfig.type === 'multi-git') {
+                    // 添加仓库信息标题
+                    const primaryRepo = this.getPrimaryRepo();
+                    if (primaryRepo) {
+                        const repoHeader = document.createElement('div');
+                        repoHeader.className = 'version-repo-info';
+                        repoHeader.innerHTML = `<h3>仓库: ${primaryRepo.name} (${primaryRepo.type})</h3>`;
+                        container.appendChild(repoHeader);
+                    }
+                }
 
                 commits.forEach(commit => {
                     const commitDate = new Date(commit.commit.committer.date);
@@ -2334,15 +2717,100 @@
                     `;
 
                     item.addEventListener('click', () => {
-                        this.restoreVersion(commit.sha);
+                        if (this.storageConfig.type === 'github') {
+                            this.restoreGithubVersion();
+                        } else if (this.storageConfig.type === 'multi-git') {
+
+                            this.restoreVersion(commit.sha);
+                        }
                     });
 
                     container.appendChild(item);
                 });
             }
-
-            // 恢复历史版本
+            // 恢复历史版本时使用主仓库
             async restoreVersion(sha) {
+                if (!confirm('确定要恢复此版本吗？当前未保存的更改将会丢失。')) {
+                    return;
+                }
+
+                const primaryRepo = this.getPrimaryRepo();
+                if (!primaryRepo) {
+                    this.showNotification('错误', '未配置多点存储仓库', 'error');
+                    return;
+                }
+
+                const { type, token, repo, serverUrl } = primaryRepo;
+                const [owner, repoName] = repo.split('/');
+
+                if (!token || !owner || !repoName) {
+                    this.showNotification('错误', '仓库配置不完整', 'error');
+                    return;
+                }
+
+                // 根据仓库类型确定API地址
+                let apiUrl;
+                switch (type) {
+                    case 'github':
+                        apiUrl = `https://api.github.com/repos/${owner}/${repoName}/contents/vault.json?ref=${sha}`;
+                        break;
+                    case 'gitee':
+                        apiUrl = `https://gitee.com/api/v5/repos/${owner}/${repoName}/contents/vault.json?ref=${sha}`;
+                        break;
+                    case 'gitea':
+                        if (!serverUrl) {
+                            this.showNotification('错误', '未配置Gitea服务器地址', 'error');
+                            return;
+                        }
+                        apiUrl = `${serverUrl}/api/v1/repos/${owner}/${repoName}/contents/vault.json?ref=${sha}`;
+                        break;
+                    case 'gitlab':
+                        apiUrl = `https://gitlab.com/api/v4/projects/${encodeURIComponent(`${owner}/${repoName}`)}/repository/files/vault.json?ref=${sha}`;
+                        break;
+                    default:
+                        this.showNotification('错误', '不支持的仓库类型', 'error');
+                        return;
+                }
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`API错误: ${errorData.message || errorData.error}`);
+                    }
+
+                    const fileData = await response.json();
+                    let content;
+
+                    // 不同平台的内容字段不同
+                    if (type === 'github' || type === 'gitea') {
+                        content = atob(fileData.content.replace(/\s/g, ''));
+                    } else if (type === 'gitee') {
+                        content = atob(fileData.content);
+                    } else if (type === 'gitlab') {
+                        content = atob(fileData.content);
+                    }
+
+                    // 保存到本地存储
+                    localStorage.setItem('vault', content);
+
+                    // 重新加载密码
+                    this.loadPasswords();
+
+                    this.hideVersionsModal();
+                    this.showNotification('成功', '版本已恢复', 'success');
+                } catch (error) {
+                    this.showNotification('错误', `恢复版本失败: ${error.message}`, 'error');
+                }
+            }
+            // 恢复历史版本
+            async restoreGithubVersion(sha) {
                 if (!confirm('确定要恢复此版本吗？当前未保存的更改将会丢失。')) {
                     return;
                 }
@@ -2370,7 +2838,6 @@
 
                     // 保存到本地存储
                     localStorage.setItem('vault', content);
-
                     // 重新加载密码
                     this.loadPasswords();
 
@@ -2443,11 +2910,58 @@
                     document.getElementById('loginModal').style.display = 'none';
                     document.getElementById('appContainer').style.display = 'flex';
 
+                    // 如果开启了自动同步，则执行从GitHub拉取数据
+                    if (this.preferences.autoSyncOnOpen && this.storageConfig.type === 'github') {
+                        this.pullFromGitHub();
+                    }
+
+                    // 如果开启了自动同步，则执行从GitHub拉取数据
+                    if (this.preferences.autoSyncOnOpen && this.storageConfig.type === 'multi-git') {
+                        this.pullFromPrimaryRepo();
+                    }
+
                     this.showNotification('成功', '保险库已解锁', 'success');
                 } catch (error) {
                     this.showNotification('错误', '解锁失败: ' + error.message, 'error');
                 }
             }
+            // 从GitHub拉取数据
+            async pullFromGitHub() {
+                this.showNotification('信息', '正在从GitHub获取最新数据...', 'info');
+
+                try {
+                    const { token, repo } = this.storageConfig.github;
+                    const [owner, repoName] = repo.split('/');
+
+                    // 调用GitHub API获取数据
+                    const apiUrl = `https://api.github.com/repos/${owner}/${repoName}/contents/vault.json`;
+                    const response = await fetch(apiUrl, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`GitHub API错误: ${errorData.message}`);
+                    }
+
+                    const fileData = await response.json();
+                    const content = atob(fileData.content.replace(/\s/g, ''));
+
+                    // 保存到本地存储
+                    localStorage.setItem('vault', content);
+
+                    // 重新加载密码
+                    this.loadPasswords();
+
+                    this.showNotification('成功', '已从GitHub获取最新数据', 'success');
+                } catch (error) {
+                    this.showNotification('错误', `获取数据失败: ${error.message}`, 'error');
+                }
+            }
+
 
             // 派生密钥
             deriveKey(password) {
@@ -2475,8 +2989,10 @@
                         const decrypted = this.decryptData(vault);
                         this.passwords = JSON.parse(decrypted);
                         this.renderPasswordList();
+
                     } catch (error) {
-                        this.showNotification('错误', '解密密码失败: ' + error.message, 'error');
+                        // this.showNotification('错误', '解密密码失败: ' + error.message, 'error');
+                        this.showNotification('提示', '请输入保险箱密码', 'info');
                     }
                 }
             }
@@ -2488,40 +3004,7 @@
                 localStorage.setItem('vault', encrypted);
             }
 
-            // 渲染密码列表
-            renderPasswordList() {
-                const container = document.getElementById('passwordItems');
-                const countElement = document.getElementById('passwordCount');
 
-                // 清空容器
-                container.innerHTML = '';
-
-                // 更新计数
-                countElement.textContent = this.passwords.length;
-
-                // 添加密码项
-                this.passwords.forEach(password => {
-                    const item = document.createElement('div');
-                    item.className = 'password-item';
-                    item.dataset.id = password.id;
-
-                    item.innerHTML = `
-                        <div class="favicon">
-                            <i class="${password.icon || 'fas fa-key'}"></i>
-                        </div>
-                        <div class="item-info">
-                            <h3>${password.site}</h3>
-                            <p>${password.username}</p>
-                        </div>
-                    `;
-
-                    item.addEventListener('click', () => {
-                        this.showPasswordDetails(password.id);
-                    });
-
-                    container.appendChild(item);
-                });
-            }
 
             // 显示密码详情
             showPasswordDetails(id) {
@@ -2532,13 +3015,15 @@
 
                 // 更新详情视图
                 document.getElementById('detailTitle').textContent = password.site;
-                document.getElementById('detailSite').textContent = password.siteUrl || '-';
                 document.getElementById('detailUsername').textContent = password.username;
                 document.getElementById('detailPassword').textContent = '••••••••••••';
                 document.getElementById('detailNotes').textContent = password.notes || '-';
                 document.getElementById('detailCreated').textContent = new Date(password.createdAt).toLocaleString();
                 document.getElementById('detailUpdated').textContent = new Date(password.updatedAt).toLocaleString();
-
+                // 更新URL链接
+                const urlElement = document.getElementById('detailUrl');
+                urlElement.textContent = password.siteUrl || '-';
+                urlElement.href = this.formatUrl(password.siteUrl);
                 // 启用编辑和删除按钮
                 document.getElementById('editPasswordBtn').disabled = false;
                 document.getElementById('deletePasswordBtn').disabled = false;
@@ -2587,6 +3072,14 @@
                     document.getElementById('detailBreached').style.color = isBreached ?
                         'var(--danger)' : 'var(--secondary)';
                 });
+            }
+            // 添加URL格式化方法
+            formatUrl(url) {
+                if (!url) return '#';
+                if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                    return 'https://' + url;
+                }
+                return url;
             }
             // 更新密码分类方法
             updatePasswordCategory(id, category) {
@@ -2754,25 +3247,47 @@
             }
 
             // 复制密码到剪贴板
+            // 修改copyPasswordToClipboard方法
             copyPasswordToClipboard() {
                 if (!this.currentPasswordId) return;
 
                 const password = this.passwords.find(p => p.id === this.currentPasswordId);
                 if (!password) return;
 
-                navigator.clipboard.writeText(password.password)
-                    .then(() => {
-                        const copyBtn = document.getElementById('copyPasswordBtn');
-                        copyBtn.innerHTML = '<i class="fas fa-check"></i>';
-                        setTimeout(() => {
-                            copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
-                        }, 2000);
+                // 创建临时textarea元素
+                const textArea = document.createElement('textarea');
+                textArea.value = password.password;
+                textArea.style.position = 'fixed';
+                textArea.style.top = 0;
+                textArea.style.left = 0;
+                textArea.style.opacity = 0;
 
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+
+                try {
+                    // 使用现代复制API
+                    const successful = document.execCommand('copy');
+                    if (successful) {
                         this.showNotification('成功', '密码已复制到剪贴板', 'success');
-                    })
-                    .catch(err => {
-                        this.showNotification('错误', '复制失败: ' + err, 'error');
-                    });
+                    } else {
+                        throw new Error('复制失败');
+                    }
+                } catch (err) {
+                    // 备用方法：使用navigator.clipboard API
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(password.password).then(() => {
+                            this.showNotification('成功', '密码已复制到剪贴板', 'success');
+                        }).catch(() => {
+                            this.showNotification('错误', '复制失败，请重试', 'error');
+                        });
+                    } else {
+                        this.showNotification('错误', '您的浏览器不支持复制功能', 'error');
+                    }
+                } finally {
+                    document.body.removeChild(textArea);
+                }
             }
 
 
@@ -2796,25 +3311,328 @@
                 document.querySelectorAll('.storage-type').forEach(btn => {
                     btn.classList.remove('active');
                 });
+                console.log(type);
 
                 // 激活当前选择的按钮
-                document.querySelector(`.storage-type[data-type="${type}"]`).classList.add('active');
+                document.querySelector(`.storage-type[data-type="${type}"]`)?.classList?.add('active');
 
                 // 显示/隐藏配置区域
                 document.getElementById('githubConfig').style.display = type === 'github' ? 'block' : 'none';
+                document.getElementById('multiGithubConfig').style.display = type === 'multi-git' ? 'block' : 'none';
                 document.getElementById('webdavConfig').style.display = type === 'webdav' ? 'block' : 'none';
 
                 // 填充现有配置
                 if (type === 'github') {
                     document.getElementById('githubToken').value = this.storageConfig.github.token || '';
                     document.getElementById('githubRepo').value = this.storageConfig.github.repo || '';
+                } else if (type === 'multi-git') {
+                    this.renderGitReposList();
                 } else if (type === 'webdav') {
                     document.getElementById('webdavUrl').value = this.storageConfig.webdav.url || '';
                     document.getElementById('webdavUsername').value = this.storageConfig.webdav.username || '';
                     document.getElementById('webdavPassword').value = this.storageConfig.webdav.password || '';
+
+                }
+
+            }
+            // 渲染GitHub仓库列表
+            renderGitReposList() {
+                const container = document.getElementById('gitReposList');
+                container.innerHTML = '';
+
+                const repos = this.storageConfig.gitRepos || [];
+
+                if (repos.length === 0) {
+                    // 添加一个默认的空仓库配置
+                    this.addGitRepo();
+                    return;
+                }
+
+                repos.forEach((repo, index) => {
+                    this.addGitRepo(repo, index);
+                });
+            }
+            // 添加Git仓库配置项
+            addGitRepo(repoData = {}, index = null) {
+                const template = document.getElementById('gitRepoItemTemplate');
+                const clone = template.content.cloneNode(true);
+                const repoItem = clone.querySelector('.git-repo-item');
+
+                // 填充数据
+                if (repoData.name) {
+                    repoItem.querySelector('.repo-name').value = repoData.name;
+                }
+                if (repoData.type) {
+                    repoItem.querySelector('.repo-type').value = repoData.type;
+                }
+                if (repoData.token) {
+                    repoItem.querySelector('.repo-token').value = repoData.token;
+                }
+                if (repoData.repo) {
+                    repoItem.querySelector('.repo-path').value = repoData.repo;
+                }
+                if (repoData.serverUrl) {
+                    repoItem.querySelector('.gitea-url').value = repoData.serverUrl;
+                }
+
+                // 设置主仓库选择状态
+                const primaryRadio = repoItem.querySelector('.primary-repo-radio');
+                primaryRadio.checked = repoData.isPrimary || false;
+
+                // 设置索引
+                if (index !== null) {
+                    repoItem.dataset.index = index;
+                }
+
+                // 仓库类型变化事件
+                const typeSelect = repoItem.querySelector('.repo-type');
+                typeSelect.addEventListener('change', (e) => {
+                    this.handleRepoTypeChange(e.target);
+                });
+
+                // 主仓库选择事件
+                primaryRadio.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        this.setPrimaryRepo(repoItem);
+                    }
+                });
+
+                // 初始化显示/隐藏Gitea服务器地址
+                this.toggleGiteaServer(repoItem, typeSelect.value);
+
+                // 移除按钮事件
+                repoItem.querySelectorAll('.remove-repo-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this.removeGitRepo(repoItem);
+                    });
+                });
+
+                document.getElementById('gitReposList').appendChild(repoItem);
+            }
+            // 设置主仓库
+            setPrimaryRepo(selectedRepoItem) {
+                const repoItems = document.querySelectorAll('.git-repo-item');
+
+                repoItems.forEach(item => {
+                    const radio = item.querySelector('.primary-repo-radio');
+                    radio.checked = (item === selectedRepoItem);
+                });
+            }
+            // 处理仓库类型变化
+            handleRepoTypeChange(selectElement) {
+                const repoItem = selectElement.closest('.git-repo-item');
+                this.toggleGiteaServer(repoItem, selectElement.value);
+            }
+
+            // 显示/隐藏Gitea服务器地址
+            toggleGiteaServer(repoItem, repoType) {
+                const giteaServer = repoItem.querySelector('.gitea-server');
+                giteaServer.style.display = repoType === 'gitea' ? 'block' : 'none';
+            }
+
+
+            // 移除GitHub仓库配置
+            removeGitRepo(repoItem) {
+                repoItem.remove();
+            }
+            // 保存GitHub仓库配置
+            saveGitReposConfig() {
+                const repoItems = document.querySelectorAll('.git-repo-item');
+                const repos = [];
+                let primaryIndex = null;
+                repoItems.forEach((item, index) => {
+                    const name = item.querySelector('.repo-name').value;
+                    const type = item.querySelector('.repo-type').value;
+                    const token = item.querySelector('.repo-token').value;
+                    const repo = item.querySelector('.repo-path').value;
+                    const serverUrl = type === 'gitea' ? item.querySelector('.gitea-url').value : '';
+                    const isPrimary = item.querySelector('.primary-repo-radio').checked;
+
+                    if (token && repo) {
+                        repos.push({
+                            name: name || `${type} 仓库 ${repos.length + 1}`,
+                            type: type,
+                            token: token,
+                            repo: repo,
+                            serverUrl: serverUrl,
+                            isPrimary: isPrimary
+                        });
+
+                        if (isPrimary) {
+                            primaryIndex = index;
+                        }
+                    }
+                });
+
+                // 确保至少有一个主仓库
+                if (primaryIndex === null && repos.length > 0) {
+                    repos[0].isPrimary = true;
+                }
+
+                this.storageConfig.gitRepos = repos;
+            }
+            // 同步到多个Git仓库
+            async syncWithMultipleGitRepos() {
+                const repos = this.storageConfig.gitRepos || [];
+
+                if (repos.length === 0) {
+                    this.showNotification('错误', '未配置Git仓库', 'error');
+                    return;
+                }
+
+                let successCount = 0;
+                let errorCount = 0;
+
+                // 显示同步进度
+                this.showNotification('信息', `开始同步到 ${repos.length} 个仓库...`, 'info');
+
+                for (const repo of repos) {
+                    try {
+                        await this.syncWithGitRepo(repo);
+                        successCount++;
+                        this.showNotification('成功', `已同步到 ${repo.name}`, 'success');
+                    } catch (error) {
+                        errorCount++;
+                        console.error(`同步到 ${repo.name} 失败:`, error);
+                        this.showNotification('错误', `同步到 ${repo.name} 失败: ${error.message}`, 'error');
+                    }
+                }
+
+                if (errorCount === 0) {
+                    this.showNotification('成功', `已成功同步到所有 ${successCount} 个仓库`, 'success');
+                } else {
+                    this.showNotification('警告', `成功同步 ${successCount} 个仓库，失败 ${errorCount} 个`, 'warning');
                 }
             }
 
+            // 同步到单个Git仓库
+            async syncWithGitRepo(repoConfig) {
+                const { type, token, repo, serverUrl } = repoConfig;
+                const [owner, repoName] = repo.split('/');
+
+                if (!token || !owner || !repoName) {
+                    throw new Error('仓库配置不完整');
+                }
+
+                // 获取加密数据
+                const encryptedData = localStorage.getItem('vault');
+                const btData = btoa(unescape(encodeURIComponent(encryptedData)));
+                let msg = `Sync vault data at ${new Date().toISOString()}`;
+                if (this.commitMsg !== null) {
+                    msg = this.commitMsg
+                }
+
+                // 根据仓库类型确定API地址
+                let apiUrl;
+                let requestBody = {};
+                // 检查文件是否存在
+                let sa = null;
+                switch (type) {
+                    case 'github':
+                        apiUrl = `https://api.github.com/repos/${owner}/${repoName}/contents/vault.json`;
+                        break;
+                    case 'gitee':
+                        apiUrl = `https://gitee.com/api/v5/repos/${owner}/${repoName}/contents/vault.json?access_token=${token}`;
+                        break;
+                    case 'gitea':
+                        if (!serverUrl) throw new Error('未配置Gitea服务器地址');
+                        apiUrl = `${serverUrl}/api/v1/repos/${owner}/${repoName}/contents/vault.json`;
+                        break;
+                    case 'gitlab':
+                        apiUrl = `https://gitlab.com/api/v4/projects/${encodeURIComponent(`${owner}/${repoName}`)}/repository/files/vault.json`;
+                        break;
+                    default:
+                        throw new Error('不支持的仓库类型');
+                }
+
+
+                try {
+
+
+                    const headers = {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    };
+
+
+                    // Gitee需要特殊处理
+                    if (type === 'gitee') {
+                        headers['Content-Type'] = 'application/json;charset=UTF-8';
+                    }
+
+                    const response = await fetch(apiUrl, { headers });
+
+                    if (response.ok) {
+                        const fileData = await response.json();
+                        // 不同平台返回的sha字段名不同
+                        sa = fileData.sha || fileData.id || fileData.file.sha;
+                    }
+                } catch (error) {
+                    console.log('文件不存在或获取文件信息失败，将创建新文件');
+                }
+
+                switch (type) {
+                    case 'github':
+                        requestBody = {
+                            message: msg,
+                            content: btData,
+                            sha: sa || undefined // 如果存在sha则更新，否则创建
+                        };
+                        break;
+                    case 'gitee':
+                        requestBody = {
+                            access_token: token,
+                            message: msg,
+                            content: btData,
+                            branch: "master",
+                            sha: sa || null // 如果存在sha则更新，否则创建
+                        };
+                        break;
+                    case 'gitea':
+                        requestBody = {
+                            message: msg,
+                            content: btData,
+                            sha: sa || undefined // 如果存在sha则更新，否则创建
+                        };
+                        break;
+                    case 'gitlab':
+                        requestBody = {
+                            branch: 'master',
+                            commit_message: msg,
+                            content: btData,
+                            encoding: 'base64'
+                        };
+                        break;
+                    default:
+                        throw new Error('不支持的仓库类型');
+                }
+
+                console.log(JSON.stringify(requestBody));
+                let methd = "PUT"
+                if (type === "gitee") {
+                    //gitee首次创建需要使用POST请求 更新则使用PUT
+                    if (!sa) {
+                        methd = "POST"
+                    }
+                }else if(type==="gitlab"){
+                    methd = "POST"
+                }
+                const response = await fetch(apiUrl, {
+                    method: methd,
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.log(JSON.stringify(errorData))
+                    throw new Error(`${type} API错误: ${errorData.message || errorData.error}`);
+                }
+            }
             // 加载存储配置
             loadStorageConfig() {
                 const config = localStorage.getItem('storageConfig');
@@ -2841,6 +3659,8 @@
                         username: document.getElementById('webdavUsername').value,
                         password: document.getElementById('webdavPassword').value
                     };
+                } else if (this.storageConfig.type === 'multi-git') {
+                    this.saveGitReposConfig();
                 }
 
                 localStorage.setItem('storageConfig', JSON.stringify(this.storageConfig));
@@ -2860,6 +3680,8 @@
                     statusElement.textContent = '使用 GitHub 存储';
                 } else if (this.storageConfig.type === 'webdav') {
                     statusElement.textContent = '使用 WebDAV 存储';
+                } else if (this.storageConfig.type === 'multi-git') {
+                    statusElement.textContent = '使用Git多点存储';
                 }
             }
             // 同步密码
@@ -2879,13 +3701,15 @@
                         return;
                     }
 
-                    if (this.storageConfig.type === 'github') {
-                        await this.syncWithGitHub(vaultData);
-                    } else if (this.storageConfig.type === 'webdav') {
-                        await this.syncWithWebDAV(vaultData);
+                    if (this.storageConfig.type === 'multi-git') {
+                        await this.syncWithMultipleGitRepos();
+                    } else if (this.storageConfig.type === 'github') {
+                        await this.syncWithGitHub(this.storageConfig.github);
+                    } else {
+                        this.showNotification('信息', '本地存储无需同步', 'info');
                     }
 
-                    this.showNotification('成功', '密码数据已同步', 'success');
+
                 } catch (error) {
                     console.error('同步失败:', error);
                     this.showNotification('错误', `同步失败: ${error.message}`, 'error');
@@ -2955,6 +3779,7 @@
                     const errorData = await uploadResponse.json();
                     throw new Error(`GitHub API错误: ${errorData.message}`);
                 }
+                this.showNotification('成功', '密码数据已同步', 'success');
             }
 
             // 与WebDAV同步
@@ -3406,11 +4231,18 @@
                 if (preferences.defaultSymbols !== undefined) {
                     document.getElementById('defaultSymbols').checked = preferences.defaultSymbols;
                 }
+                // 设置自动同步复选框状态
+                if (preferences.autoSyncOnOpen) {
+                    document.getElementById('autoSyncOnOpen').checked = this.preferences.autoSyncOnOpen || false;
+                }
+
+
             }
 
             // 保存偏好设置
             savePreferences() {
                 const preferences = {
+                    autoSyncOnOpen: document.getElementById('autoSyncOnOpen').checked,
                     autoLockTime: document.getElementById('autoLockTime').value,
                     backupFrequency: document.getElementById('backupFrequency').value,
                     themePreference: document.getElementById('themePreference').value,
@@ -3477,6 +4309,60 @@
                 }, 0);
 
                 this.showNotification('成功', '配置已导出', 'success');
+            }
+            // 在PasswordManager类中添加导入配置方法
+            importConfig() {
+                const fileInput = document.getElementById('configFile');
+                const file = fileInput.files[0];
+
+                if (!file) {
+                    this.showNotification('错误', '请选择配置文件', 'error');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const config = JSON.parse(e.target.result);
+
+                        // 验证配置文件格式
+                        if (!this.validateConfig(config)) {
+                            this.showNotification('错误', '配置文件格式不正确', 'error');
+                            return;
+                        }
+
+                        // 应用配置
+                        this.applyConfig(config);
+                        this.hideImportModal();
+                        this.showNotification('成功', '配置已导入', 'success');
+                    } catch (error) {
+                        this.showNotification('错误', `导入配置失败: ${error.message}`, 'error');
+                    }
+                };
+
+                reader.readAsText(file);
+            }
+
+            // 验证配置文件格式
+            validateConfig(config) {
+                return config &&
+                    typeof config === 'object' &&
+                    config.storageConfig &&
+                    config.preferences;
+            }
+
+            // 应用配置
+            applyConfig(config) {
+                this.storageConfig = config.storageConfig;
+                this.preferences = config.preferences;
+
+                // 保存到本地存储
+                localStorage.setItem('storageConfig', JSON.stringify(this.storageConfig));
+                localStorage.setItem('preferences', JSON.stringify(this.preferences));
+
+                // 更新UI
+                this.updateStorageStatus();
+                this.applyPreferences();
             }
 
 
