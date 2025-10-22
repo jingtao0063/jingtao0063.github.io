@@ -531,6 +531,7 @@
             display: flex;
             gap: 10px;
             margin-top: 20px;
+            margin-bottom: 20px;
         }
 
         .btn-secondary {
@@ -1177,6 +1178,108 @@
             color: var(--primary);
             margin: 0;
         }
+        /* 选项容器样式 */
+.import-options-container,
+.export-options-container {
+    padding: 20px;
+    max-height: 60vh;
+    /* overflow-y: auto; */
+}
+
+.option-group {
+    margin-bottom: 25px;
+}
+
+.option-title {
+    font-size: 18px;
+    color: var(--primary);
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--light-gray);
+    display: flex;
+    align-items: center;
+}
+
+.option-title::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 18px;
+    background-color: var(--primary);
+    margin-right: 10px;
+    border-radius: 2px;
+}
+
+.option-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.option-item {
+    background-color: var(--dark-light);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s;
+    border: 1px solid var(--light-gray);
+}
+
+.option-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary);
+}
+
+.option-item label {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.option-item input[type="radio"],
+.option-item input[type="checkbox"] {
+    display: none;
+}
+
+.option-item input[type="radio"]:checked + label,
+.option-item input[type="checkbox"]:checked + label {
+    background-color: rgba(26, 115, 232, 0.1);
+}
+
+.option-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    color: white;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.option-content {
+    flex: 1;
+}
+
+.option-content h4 {
+    font-size: 16px;
+    margin-bottom: 5px;
+    color: var(--text);
+}
+
+.option-content p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.4;
+}
+
+
     </style>
 
 
@@ -1465,6 +1568,194 @@
             </div>
         </div>
     </div>
+ <!-- 优化后的导入选项模态框 -->
+<div class="modal" id="importOptionsModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>导入选项</h2>
+            <button class="close-modal">&times;</button>
+        </div>
+        
+        <div class="import-options-container">
+            <div class="option-group">
+                <h3 class="option-title">导入模式</h3>
+                <div class="option-items">
+                    <div class="option-item">
+                        <input type="radio" id="replaceMode" name="importMode" value="replace" checked>
+                        <label for="replaceMode">
+                            <div class="option-icon">
+                                <i class="fas fa-sync-alt"></i>
+                            </div>
+                            <div class="option-content">
+                                <h4>覆盖现有数据</h4>
+                                <p>完全替换当前所有密码数据</p>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <div class="option-item">
+                        <input type="radio" id="mergeMode" name="importMode" value="merge">
+                        <label for="mergeMode">
+                            <div class="option-icon">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                            <div class="option-content">
+                                <h4>增量更新（合并）</h4>
+                                <p>将导入数据与现有数据合并</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="option-group">
+                <h3 class="option-title">冲突处理</h3>
+                <div class="option-items">
+                    <div class="option-item">
+                        <input type="radio" id="overwriteConflict" name="conflictResolution" value="overwrite" checked>
+                        <label for="overwriteConflict">
+                            <div class="option-icon">
+                                <i class="fas fa-arrow-down"></i>
+                            </div>
+                            <div class="option-content">
+                                <h4>覆盖现有项</h4>
+                                <p>用导入项替换相同ID的现有项</p>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <div class="option-item">
+                        <input type="radio" id="keepConflict" name="conflictResolution" value="keep">
+                        <label for="keepConflict">
+                            <div class="option-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="option-content">
+                                <h4>保留现有项</h4>
+                                <p>忽略导入项中相同ID的项</p>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <div class="option-item">
+                        <input type="radio" id="renameConflict" name="conflictResolution" value="rename">
+                        <label for="renameConflict">
+                            <div class="option-icon">
+                                <i class="fas fa-tag"></i>
+                            </div>
+                            <div class="option-content">
+                                <h4>重命名导入项</h4>
+                                <p>为导入项生成新ID，避免冲突</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-actions" style="padding-bottom: 20px;">
+                <button type="button" class="btn btn-secondary" id="cancelImportOptionsBtn">取消</button>
+                <button type="button" class="btn" id="confirmImportOptionsBtn">继续导入</button>
+            </div>
+        </div>
+        
+      
+    </div>
+</div>
+
+<!-- 优化后的导出选项模态框 -->
+<div class="modal" id="exportOptionsModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>导出选项</h2>
+            <button class="close-modal">&times;</button>
+        </div>
+        
+        <div class="export-options-container">
+            <div class="option-group">
+                <h3 class="option-title">导出格式</h3>
+                <div class="option-items">
+                    <div class="option-item">
+                        <input type="radio" id="encryptedFormat" name="exportFormat" value="encrypted" checked>
+                        <label for="encryptedFormat">
+                            <div class="option-icon">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            <div class="option-content">
+                                <h4>加密格式（密文）</h4>
+                                <p>导出加密数据，需要主密码解密</p>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <div class="option-item">
+                        <input type="radio" id="plainFormat" name="exportFormat" value="plain">
+                        <label for="plainFormat">
+                            <div class="option-icon">
+                                <i class="fas fa-unlock"></i>
+                            </div>
+                            <div class="option-content">
+                                <h4>明文格式（未加密）</h4>
+                                <p>导出未加密数据，可直接查看</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="option-group">
+                <h3 class="option-title">包含内容</h3>
+                <div class="option-items">
+                    <div class="option-item">
+                        <input type="checkbox" id="includePasswords" checked>
+                        <label for="includePasswords">
+                            <div class="option-icon">
+                                <i class="fas fa-key"></i>
+                            </div>
+                            <div class="option-content">
+                                <h4>包含密码</h4>
+                                <p>导出密码字段</p>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <div class="option-item">
+                        <input type="checkbox" id="includeNotes" checked>
+                        <label for="includeNotes">
+                            <div class="option-icon">
+                                <i class="fas fa-sticky-note"></i>
+                            </div>
+                            <div class="option-content">
+                                <h4>包含备注</h4>
+                                <p>导出备注信息</p>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <div class="option-item">
+                        <input type="checkbox" id="includeMetadata" checked>
+                        <label for="includeMetadata">
+                            <div class="option-icon">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                            <div class="option-content">
+                                <h4>包含元数据</h4>
+                                <p>导出创建时间、修改时间等元数据</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-actions" style="padding-bottom: 20px;">
+                <button type="button" class="btn btn-secondary" id="cancelExportOptionsBtn">取消</button>
+                <button type="button" class="btn" id="confirmExportOptionsBtn">导出</button>
+            </div>
+        </div>
+        
+      
+    </div>
+</div>
+
+
+    
     <!-- 添加/编辑密码模态框 -->
     <div class="modal" id="passwordModal">
         <div class="modal-content">
@@ -1680,6 +1971,7 @@
             </div>
         </div>
     </div>
+    
     <!-- 安全审计模态框 -->
     <div class="modal" id="securityAuditModal">
         <div class="modal-content">
@@ -2048,9 +2340,27 @@
 
                 // 导出按钮
                 document.getElementById('exportBtn').addEventListener('click', () => {
-                    this.exportPasswords();
+                    // 显示导出选项模态框
+                    document.getElementById('exportOptionsModal').classList.add('active');
                 });
 
+                document.getElementById('confirmExportOptionsBtn').addEventListener('click', () => {
+                    const format = document.querySelector('input[name="exportFormat"]:checked').value;
+                    const includePasswords = document.getElementById('includePasswords').checked;
+                    const includeNotes = document.getElementById('includeNotes').checked;
+                    const includeMetadata = document.getElementById('includeMetadata').checked;
+
+                    this.exportPasswords(format, includePasswords, includeNotes, includeMetadata);
+                    document.getElementById('exportOptionsModal').classList.remove('active');
+                });
+
+                document.getElementById('cancelExportOptionsBtn').addEventListener('click', () => {
+                    this.hideExportOptionModal();
+                });
+
+                document.getElementById('cancelImportOptionsBtn').addEventListener('click', () => {
+                    this.hideImportOptionsModal();
+                });
                 // 存储设置按钮
                 document.getElementById('storageSettingsBtn').addEventListener('click', () => {
                     this.showStorageModal();
@@ -2083,6 +2393,8 @@
                         this.hideSecurityAuditModal();
                         this.hideSyncModal();
                         this.hideImportModal();
+                        this.hideExportOptionModal();
+                        this.hideImportOptionsModal();
                     });
                 });
 
@@ -2292,6 +2604,24 @@
                     });
                 });
 
+                // 确认导入选项
+                document.getElementById('confirmImportOptionsBtn').addEventListener('click', () => {
+                    const importMode = document.querySelector('input[name="importMode"]:checked').value;
+                    const conflictResolution = document.querySelector('input[name="conflictResolution"]:checked').value;
+
+                    try {
+                        // 处理导入数据
+                        this.processImportData(this.importData, importMode, conflictResolution);
+
+                        // 隐藏模态框
+                        this.hideImportOptionsModal();
+
+                        this.showNotification('成功', '密码已导入', 'success');
+                    } catch (error) {
+                        this.showNotification('错误', '导入失败: ' + error.message, 'error');
+                    }
+                });
+
             }
             // 添加显示生成密码模态框的方法
             showGeneratePasswordModal() {
@@ -2333,6 +2663,10 @@
             hideImportModal() {
                 document.getElementById('importConfigModal').classList.remove('active');
 
+            }
+            // 隐藏数据导入模态框
+            hideImportOptionsModal() {
+                document.getElementById('importOptionsModal').classList.remove('active');
             }
             // 显示配置导入模态框
             showImportModal() {
@@ -2571,7 +2905,7 @@
             renderPasswordList(passwords = this.passwords) {
                 const container = document.getElementById('passwordItems');
                 const countElement = document.getElementById('passwordCount');
-                console.log(passwords.length);
+                console.log(passwords);
 
                 // 清空容器
                 container.innerHTML = '';
@@ -2998,10 +3332,11 @@
             }
 
             // 保存密码
-            savePasswords() {
-                const data = JSON.stringify(this.passwords);
+            savePasswords(passwords = this.passwords) {
+                const data = JSON.stringify(passwords);
                 const encrypted = this.encryptData(data);
                 localStorage.setItem('vault', encrypted);
+
             }
 
 
@@ -3301,6 +3636,11 @@
             // 隐藏存储设置模态框
             hideStorageModal() {
                 document.getElementById('storageModal').classList.remove('active');
+            }
+
+            // 隐藏数据导出选项模态框
+            hideExportOptionModal() {
+                document.getElementById('exportOptionsModal').classList.remove('active');
             }
 
             // 选择存储类型
@@ -3614,7 +3954,7 @@
                     if (!sa) {
                         methd = "POST"
                     }
-                }else if(type==="gitlab"){
+                } else if (type === "gitlab") {
                     methd = "POST"
                 }
                 const response = await fetch(apiUrl, {
@@ -3813,79 +4153,149 @@
                 }
             }
 
-
-            // 导入密码
+            // 修改导入方法，支持导入密文数据
             importPasswords() {
-                // 创建文件输入元素
                 const fileInput = document.createElement('input');
                 fileInput.type = 'file';
-                fileInput.accept = '.json,.txt';
+                fileInput.accept = '.json';
 
-                fileInput.onchange = (e) => {
+                fileInput.addEventListener('change', (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
 
                     const reader = new FileReader();
                     reader.onload = (event) => {
                         try {
-                            const data = JSON.parse(event.target.result);
+                            const data = event.target.result;
+                            this.importData = data; // 临时存储导入数据
 
-                            if (Array.isArray(data)) {
-                                // 合并导入的密码
-                                data.forEach(newPassword => {
-                                    const existingIndex = this.passwords.findIndex(p => p.id === newPassword.id);
-
-                                    if (existingIndex !== -1) {
-                                        // 更新现有密码
-                                        this.passwords[existingIndex] = {
-                                            ...this.passwords[existingIndex],
-                                            ...newPassword,
-                                            updatedAt: new Date().toISOString()
-                                        };
-                                    } else {
-                                        // 添加新密码
-                                        this.passwords.push({
-                                            ...newPassword,
-                                            id: Date.now().toString(),
-                                            createdAt: new Date().toISOString(),
-                                            updatedAt: new Date().toISOString()
-                                        });
-                                    }
-                                });
-
-                                this.savePasswords();
-                                this.renderPasswordList();
-                                this.showNotification('成功', '密码导入成功', 'success');
-                            } else {
-                                this.showNotification('错误', '导入文件格式不正确', 'error');
-                            }
+                            // 显示导入选项模态框
+                            document.getElementById('importOptionsModal').classList.add('active');
                         } catch (error) {
                             this.showNotification('错误', '导入失败: ' + error.message, 'error');
                         }
                     };
 
                     reader.readAsText(file);
-                };
+                });
 
                 fileInput.click();
             }
-
-            // 导出密码
-            exportPasswords() {
-                if (this.passwords.length === 0) {
-                    this.showNotification('信息', '没有密码可导出', 'info');
-                    return;
+            // 处理导入数据
+            processImportData(data, importMode, conflictResolution) {
+                // 尝试解析为JSON，如果解析失败则可能是密文
+                let parsedData;
+                try {
+                    parsedData = JSON.parse(data);
+                } catch (error) {
+                    // 可能是密文，尝试解密
+                    try {
+                        const decrypted = this.decryptData(data);
+                        parsedData = JSON.parse(decrypted);
+                    } catch (err) {
+                        throw new Error('文件格式不正确或解密失败');
+                    }
                 }
 
-                // 创建导出数据
-                const exportData = JSON.stringify(this.passwords, null, 2);
-                const blob = new Blob([exportData], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
+                // 验证数据格式
+                if (!Array.isArray(parsedData)) {
+                    throw new Error('导入文件格式不正确');
+                }
+
+                // 获取当前密码数据
+                const currentPasswords = this.passwords;
+
+                // 根据导入模式处理数据
+                if (importMode === 'replace') {
+                    // 覆盖模式 - 直接替换现有数据
+                    this.savePasswords(parsedData);
+                } else {
+                    // 合并模式 - 合并现有数据和导入数据
+                    const mergedPasswords = this.mergePasswords(currentPasswords, parsedData, conflictResolution);
+                    this.savePasswords(mergedPasswords);
+                }
+
+                // 重新加载密码
+                this.loadPasswords();
+            }
+            // 合并密码数据
+            mergePasswords(currentPasswords, importPasswords, conflictResolution) {
+                const merged = [...currentPasswords];
+
+                importPasswords.forEach(importedPassword => {
+                    // 检查是否存在相同ID的密码项
+                    const existingIndex = currentPasswords.findIndex(p => p.id === importedPassword.id);
+
+                    if (existingIndex !== -1) {
+                        // 处理冲突
+                        switch (conflictResolution) {
+                            case 'overwrite':
+                                // 覆盖现有项
+                                merged[existingIndex] = importedPassword;
+                                break;
+                            case 'keep':
+                                // 保留现有项，不做任何操作
+                                break;
+                            case 'rename':
+                                // 重命名导入项（创建新ID）
+                                const renamedPassword = {
+                                    ...importedPassword,
+                                    id: Date.now().toString() // 生成新ID
+                                };
+                                merged.push(renamedPassword);
+                                break;
+                        }
+                    } else {
+                        // 不存在冲突，直接添加
+                        merged.push(importedPassword);
+                    }
+                });
+
+                return merged;
+            }
+            // 导出密码
+            exportPasswords(format, includePasswords, includeNotes, includeMetadata) {
+                const data = localStorage.getItem('vault');
+                let exportData;
+
+                if (format === 'encrypted') {
+                    // 直接导出加密数据
+                    exportData = data;
+                } else {
+                    // 导出明文数据
+                    try {
+                        const decrypted = this.decryptData(data);
+                        const passwords = JSON.parse(decrypted);
+
+                        // 根据选项过滤数据
+                        const filteredPasswords = passwords.map(password => {
+                            return {
+                                id: password.id,
+                                site: password.site,
+                                siteUrl: password.siteUrl,
+                                username: password.username,
+                                password: includePasswords ? password.password : undefined,
+                                notes: includeNotes ? password.notes : undefined,
+                                createdAt: includeMetadata ? password.createdAt : undefined,
+                                updatedAt: includeMetadata ? password.updatedAt : undefined,
+                                category: password.category,
+                                isFavorite: password.isFavorite
+                            };
+                        });
+
+                        exportData = JSON.stringify(filteredPasswords, null, 2);
+                    } catch (error) {
+                        this.showNotification('错误', '解密数据失败: ' + error.message, 'error');
+                        return;
+                    }
+                }
 
                 // 创建下载链接
+                const blob = new Blob([exportData], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `passwords_export_${new Date().toISOString().slice(0, 10)}.json`;
+                a.download = `securepass-export-${new Date().toISOString().slice(0, 10)}.json`;
                 document.body.appendChild(a);
                 a.click();
 
@@ -3893,8 +4303,7 @@
                 setTimeout(() => {
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-                }, 100);
-
+                }, 0);
                 this.showNotification('成功', '密码导出成功', 'success');
             }
 
